@@ -41,7 +41,7 @@ void PlayerDataAPI::upload(const matjson::Value& data, std::string_view id) {
             .header("Authorization", res.unwrap())
             .post(fmt::format(PLAYER_DATA_URL "/{}", GJAccountManager::get()->m_accountID, id))
             .listen([](web::WebResponse* res) {
-                if (!res->ok()) log::error("Failed to upload player data: {}", res->string().unwrapOr(""));
+                if (!res->ok()) log::error("Failed to upload profile data: {}", res->string().unwrapOr(""));
             });
     }).inspectErr([](const std::string& err) {
         log::error("Failed to start Argon authentication: {}", err);
@@ -78,10 +78,10 @@ class $modify(PDAGameLevelManager, GameLevelManager) {
         GameLevelManager::getGJUserInfo(accountID);
 
         web::WebRequest().get(fmt::format(PLAYER_DATA_URL, accountID)).listen([this, accountID](web::WebResponse* res) {
-            if (!res->ok()) return log::error("Failed to get player data: {}", res->string().unwrapOr(""));
+            if (!res->ok()) return log::error("Failed to get profile data: {}", res->string().unwrapOr(""));
 
             auto data = res->json().unwrapOr(matjson::Value::object());
-            if (!data.isObject()) return log::error("Invalid player data format");
+            if (!data.isObject()) return log::error("Invalid profile data format");
 
             queueInMainThread([this, accountID, data] {
                 if (isDLActive(fmt::format("account_{}", accountID).c_str())) m_fields->m_userData[accountID] = data;

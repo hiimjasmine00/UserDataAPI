@@ -10,7 +10,7 @@
     "name": "Player Data API",
     "version": "v1.0.1",
     "developer": "hiimjasmine00",
-    "description": "An API for managing extra player data.",
+    "description": "An API for managing extra profile data.",
     "api": {
         "include": [
             "include/*.hpp"

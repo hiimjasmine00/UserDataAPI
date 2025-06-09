@@ -1,5 +1,5 @@
 # Player Data API
-An API for managing extra player data.
+An API for managing extra profile data.
 
 ## Usage
 To use Player Data API, you need to include it as a dependency in your Geode mod. You can do this by adding the following lines to your `mod.json` file:

@@ -23,18 +23,18 @@
 /// The class for interacting with the Player Data API.
 class PlayerDataAPI {
 public:
-    /// Returns whether the given user score contains player data for the specified ID.
+    /// Returns whether the given user score contains profile data for the specified ID.
     /// @param score The user score to check
     /// @param id The ID to check for (default is your mod ID)
-    /// @returns True if the user score contains player data for the specified ID, false otherwise.
+    /// @returns True if the user score contains profile data for the specified ID, false otherwise.
     static bool contains(GJUserScore* score, std::string_view id = GEODE_MOD_ID) {
         return score->getUserObject(fmt::format("hiimjasmine00.player_data_api/{}", id)) != nullptr;
     }
 
-    /// Retrieves player data from the given user score for the specified ID.
+    /// Retrieves profile data from the given user score for the specified ID.
     /// @param score The user score to retrieve data from
     /// @param id The ID to retrieve data for (Defaults to your mod ID)
-    /// @returns A Result containing the player data as a matjson::Value, or an error if the data could not be retrieved.
+    /// @returns A Result containing the profile data as a matjson::Value, or an error if the data could not be retrieved.
     static geode::Result<matjson::Value> get(GJUserScore* score, std::string_view id = GEODE_MOD_ID) {
         auto obj = score->getUserObject(fmt::format("hiimjasmine00.player_data_api/{}", id));
         if (!obj) return geode::Err("User object not found");
@@ -43,18 +43,18 @@ public:
         return geode::Ok(ret);
     }
 
-    /// Retrieves player data from the given user score for the specified ID and converts it to the specified type.
+    /// Retrieves profile data from the given user score for the specified ID and converts it to the specified type.
     /// @param score The user score to retrieve data from
     /// @param id The ID to retrieve data for (Defaults to your mod ID)
-    /// @returns A Result containing the player data as the specified type, or an error if the data could not be retrieved or converted.
+    /// @returns A Result containing the profile data as the specified type, or an error if the data could not be retrieved or converted.
     template <class T>
     static geode::Result<T> get(GJUserScore* score, std::string_view id = GEODE_MOD_ID) {
         GEODE_UNWRAP_INTO(T ret, get(score, id).andThen([](const matjson::Value& val) { return val.as<T>(); }));
         return geode::Ok(ret);
     }
 
-    /// Uploads player data to the Player Data API.
-    /// @param data The player data to upload as a matjson::Value
+    /// Uploads profile data to the Player Data API.
+    /// @param data The profile data to upload as a matjson::Value
     /// @param id The ID to upload data for (Defaults to your mod ID)
     static void PLAYER_DATA_API_DLL upload(const matjson::Value& data, std::string_view id = GEODE_MOD_ID);
 };
@@ -65,7 +65,7 @@ inline void PlayerDataAPI::upload(const matjson::Value& data, std::string_view i
 }
 #endif
 
-/// The event for when player data is retrieved from the Player Data API.
+/// The event for when profile data is retrieved from the Player Data API.
 class PlayerDataAPIGetEvent : public geode::Event {
 protected:
     GJUserScore* m_score;
