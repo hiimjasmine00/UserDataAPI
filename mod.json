@@ -1,16 +1,16 @@
 {
-	"geode": "4.5.0",
-	"gd": {
-		"win": "2.2074",
-		"android": "2.2074",
-		"mac": "2.2074",
-		"ios": "2.2074"
-	},
-	"id": "hiimjasmine00.player_data_api",
-	"name": "Player Data API",
-	"version": "v1.0.0",
-	"developer": "hiimjasmine00",
-	"description": "An API for managing extra player data.",
+    "geode": "4.5.0",
+    "gd": {
+        "win": "2.2074",
+        "android": "2.2074",
+        "mac": "2.2074",
+        "ios": "2.2074"
+    },
+    "id": "hiimjasmine00.player_data_api",
+    "name": "Player Data API",
+    "version": "v1.0.1",
+    "developer": "hiimjasmine00",
+    "description": "An API for managing extra player data.",
     "api": {
         "include": [
             "include/*.hpp"
@@ -18,14 +18,14 @@
     },
     "links": {
         "community": "https://discord.gg/QVKmbvBXA7",
-        "source": "https://github.com/hiimjasmine00/MoreIcons",
-        "homepage": "https://more-icons.hiimjasmine00.com"
+        "source": "https://github.com/hiimjasmine00/PlayerDataAPI",
+        "homepage": "https://www.hiimjasmine00.com"
     },
-	"tags": [
-		"content",
-		"developer",
-		"enhancement",
-		"online",
-		"utility"
-	]
+    "tags": [
+        "content",
+        "developer",
+        "enhancement",
+        "online",
+        "utility"
+    ]
 }
