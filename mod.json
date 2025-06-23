@@ -1,5 +1,5 @@
 {
-    "geode": "4.5.0",
+    "geode": "4.6.1",
     "gd": {
         "win": "2.2074",
         "android": "2.2074",
@@ -8,7 +8,7 @@
     },
     "id": "hiimjasmine00.player_data_api",
     "name": "Player Data API",
-    "version": "v1.0.1",
+    "version": "v1.0.2",
     "developer": "hiimjasmine00",
     "description": "An API for managing extra profile data.",
     "api": {
@@ -22,6 +22,7 @@
         "homepage": "https://www.hiimjasmine00.com"
     },
     "tags": [
+        "api",
         "content",
         "developer",
         "enhancement",

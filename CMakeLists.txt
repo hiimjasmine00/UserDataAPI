@@ -9,7 +9,7 @@ endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(PlayerDataAPI VERSION 1.0.1)
+project(PlayerDataAPI VERSION 1.0.2)
 
 add_library(${PROJECT_NAME} SHARED src/PlayerDataAPI.cpp)
 
