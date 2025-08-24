@@ -1,24 +1,31 @@
 {
-    "geode": "4.6.1",
+    "geode": "4.7.0",
     "gd": {
         "win": "2.2074",
         "android": "2.2074",
         "mac": "2.2074",
         "ios": "2.2074"
     },
-    "id": "hiimjasmine00.player_data_api",
-    "name": "Player Data API",
-    "version": "v1.0.2",
+    "id": "hiimjasmine00.user_data_api",
+    "name": "User Data API",
+    "version": "v1.0.0",
     "developer": "hiimjasmine00",
-    "description": "An API for managing extra profile data.",
+    "description": "An API for managing extra user data.",
     "api": {
         "include": [
-            "include/*.hpp"
+            "include/*.hpp",
+            "include/events/*.hpp"
         ]
+    },
+    "incompatibilities": {
+        "hiimjasmine00.player_data_api": {
+            "importance": "superseded",
+            "version": ">=v1.0.0"
+        }
     },
     "links": {
         "community": "https://discord.gg/QVKmbvBXA7",
-        "source": "https://github.com/hiimjasmine00/PlayerDataAPI",
+        "source": "https://github.com/hiimjasmine00/UserDataAPI",
         "homepage": "https://www.hiimjasmine00.com"
     },
     "tags": [

@@ -9,14 +9,14 @@ endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(PlayerDataAPI VERSION 1.0.2)
+project(UserDataAPI VERSION 1.0.0)
 
-add_library(${PROJECT_NAME} SHARED src/PlayerDataAPI.cpp)
+add_library(${PROJECT_NAME} SHARED src/UserDataAPI.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 if (PROJECT_IS_TOP_LEVEL)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE PLAYER_DATA_API_EXPORTING)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USER_DATA_API_EXPORTING)
 endif()
 
 if (NOT DEFINED ENV{GEODE_SDK})
@@ -27,7 +27,7 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
-CPMAddPackage("gh:GlobedGD/argon@1.1.6")
+CPMAddPackage("gh:GlobedGD/argon@1.1.9")
 target_link_libraries(${PROJECT_NAME} argon)
 
 setup_geode_mod(${PROJECT_NAME})
