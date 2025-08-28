@@ -43,8 +43,11 @@ Then, include the headers in your code.
 User Data API uses the `user_data` namespace. Its methods are included in `<hiimjasmine00.user_data_api/include/UserDataAPI.hpp>`.
 
 - `user_data::contains(cocos2d::CCNode* node, std::string_view id)`: Checks if user data for the given mod ID (defaults to your mod ID) exists on the node.
+- `user_data::downloading(cocos2d::CCNode* node)`: Checks if user data is currently being downloaded for the node.
 - `user_data::get<T>(cocos2d::CCNode* node, std::string_view id)`: Retrieves user data associated with the node and mod ID (defaults to your mod ID), and converts it to type `T` (defaults to [`matjson::Value`](https://docs.geode-sdk.org/classes/matjson/Value/)).
 - `user_data::upload(const matjson::Value& data, std::string_view id)`: Uploads user data to the API for the given mod ID (defaults to your mod ID).
+
+The ID for User Data API can be retrieved using `user_data::ID`.
 
 ## Events
 The User Data API exposes [events](https://docs.geode-sdk.org/tutorials/events/) that let you react to web requests (such as loading profiles, comments, or leaderboards).

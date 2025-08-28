@@ -9,7 +9,7 @@ endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(UserDataAPI VERSION 1.0.0)
+project(UserDataAPI VERSION 1.1.0)
 
 add_library(${PROJECT_NAME} SHARED src/UserDataAPI.cpp)
 

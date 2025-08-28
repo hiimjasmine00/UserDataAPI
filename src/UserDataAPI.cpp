@@ -31,7 +31,7 @@ void user_data::upload(const matjson::Value& data, std::string_view id) {
                 .header("Authorization", token)
                 .post(fmt::format("https://playerdata.hiimjasmine00.com/v1/{}/{}", GJAccountManager::get()->m_accountID, id))
                 .listen([](web::WebResponse* res) {
-                    if (!res->ok()) log::error("Failed to upload user data: {}", res->string().unwrapOr(""));
+                    if (!res->ok()) log::error("Failed to upload user data: {}", res->string().unwrapOrDefault());
                 });
         }).inspectErr([](const std::string& err) {
             log::error("Argon authentication failed: {}", err);
@@ -106,7 +106,9 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
         std::string url;
         if constexpr (std::is_same_v<T, user_data::ProfileEvent>) {
-            url = fmt::format("https://playerdata.hiimjasmine00.com/v2/{}", static_cast<GJUserScore*>(object)->m_accountID);
+            auto score = static_cast<GJUserScore*>(object);
+            url = fmt::format("https://playerdata.hiimjasmine00.com/v2/{}", score->m_accountID);
+            score->setUserObject("downloading"_spr, CCBool::create(true));
         }
         else {
             std::set<int> ids;
@@ -117,37 +119,45 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
                 else {
                     ids.insert(static_cast<GJUserScore*>(obj)->m_accountID);
                 }
+                obj->setUserObject("downloading"_spr, CCBool::create(true));
             }
             url = fmt::format("https://playerdata.hiimjasmine00.com/v2/{}", fmt::join(ids, ","));
         }
 
         web::WebRequest().get(url).listen([this, objectRef = WeakRef(object)](web::WebResponse* res) {
-            if (!res->ok()) return log::error("Failed to get user data: {}", res->string().unwrapOr(""));
+            auto data = matjson::Value::object();
+            auto response = res->string().unwrapOrDefault();
 
-            auto data = res->json().unwrapOr(matjson::Value::object());
-            if (!data.isObject()) return log::error("Invalid user data format");
+            if (res->ok()) {
+                GEODE_UNWRAP_INTO_IF_OK(data, matjson::parse(response).inspectErr([](const matjson::ParseError& err) {
+                    log::error("Failed to parse user data JSON: {}", err);
+                }));
+                if (!data.isObject()) log::error("Invalid user data format");
+            }
+            else log::error("Failed to get user data: {}", response);
 
-            if (data.size() > 0) {
-                queueInMainThread([this, data = std::move(data), objectRef = std::move(objectRef)] {
-                    auto object = objectRef.lock().data();
-                    if (!object) return;
-
-                    if constexpr (std::is_same_v<T, user_data::ProfileEvent>) {
-                        auto score = static_cast<GJUserScore*>(object);
-                        applyData<T>(score, data, score->m_accountID);
-                    }
-                    else if constexpr (std::is_same_v<T, user_data::CommentEvent>) {
-                        for (auto comment : CCArrayExt<GJComment*>(static_cast<CCArray*>(object))) {
+            if (auto object = objectRef.lock().data()) {
+                auto hasData = data.isObject() && data.size() > 0;
+                if constexpr (std::is_same_v<T, user_data::ProfileEvent>) {
+                    auto score = static_cast<GJUserScore*>(object);
+                    score->setUserObject("downloading"_spr, nullptr);
+                    if (hasData) applyData<T>(score, data, score->m_accountID);
+                }
+                else if constexpr (std::is_same_v<T, user_data::CommentEvent>) {
+                    for (auto comment : CCArrayExt<GJComment*>(static_cast<CCArray*>(object))) {
+                        comment->setUserObject("downloading"_spr, nullptr);
+                        if (hasData) {
                             auto score = comment->m_userScore;
                             if (score) applyData<T>(comment, data, score->m_accountID);
                         }
                     }
-                    else {
-                        for (auto score : CCArrayExt<GJUserScore*>(static_cast<CCArray*>(object))) {
-                            applyData<T>(score, data, score->m_accountID);
-                        }
+                }
+                else {
+                    for (auto score : CCArrayExt<GJUserScore*>(static_cast<CCArray*>(object))) {
+                        score->setUserObject("downloading"_spr, nullptr);
+                        if (hasData) applyData<T>(score, data, score->m_accountID);
                     }
-                });
+                }
             }
         });
     }
