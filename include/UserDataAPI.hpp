@@ -32,14 +32,14 @@ namespace user_data {
     /// @param id The ID to check for (default is your mod ID)
     /// @returns True if the node contains user data for the specified ID, false otherwise.
     inline bool contains(cocos2d::CCNode* node, std::string_view id = GEODE_MOD_ID) {
-        return node->getUserObject(fmt::format("{}/{}", ID, id)) != nullptr;
+        return node && node->getUserObject(fmt::format("{}/{}", ID, id)) != nullptr;
     }
 
     /// Returns whether the given node is currently downloading user data.
     /// @param node The node to check
     /// @returns True if the node is currently downloading user data, false otherwise.
     inline bool downloading(cocos2d::CCNode* node) {
-        return node->getUserObject(fmt::format("{}/downloading", ID)) != nullptr;
+        return node && node->getUserObject(fmt::format("{}/downloading", ID)) != nullptr;
     }
 
     /// Retrieves user data from the given node for the specified ID and converts it to the specified type. (Defaults to matjson::Value)
@@ -48,6 +48,8 @@ namespace user_data {
     /// @returns A Result containing the user data as the specified type, or an error if the data could not be retrieved or converted.
     template <class T = matjson::Value>
     inline geode::Result<T> get(cocos2d::CCNode* node, std::string_view id = GEODE_MOD_ID) {
+        if (!node) return geode::Err("Node is null");
+
         if (auto obj = static_cast<cocos2d::CCString*>(node->getUserObject(fmt::format("{}/{}", ID, id)))) {
             return matjson::parseAs<T>(obj->m_sString);
         }
