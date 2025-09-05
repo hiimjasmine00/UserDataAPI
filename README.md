@@ -12,7 +12,7 @@ To use User Data API, include it as a [dependency](https://docs.geode-sdk.org/mo
 {
     "dependencies": {
         "hiimjasmine00.user_data_api": {
-            "version": ">=v1.0.0",
+            "version": ">=v1.2.0",
             "importance": "required"
         }
     }
@@ -57,13 +57,24 @@ You can include them all with:
 #include <hiimjasmine00.user_data_api/include/Events.hpp>
 ```
 
-Or include only the specific event headers you need (see below). Each event also supports an optional account ID filter to limit results.
+Or include only the specific event headers you need.
+- `<hiimjasmine00.user_data_api/include/events/Profile.hpp>`: Profile events
+- `<hiimjasmine00.user_data_api/include/events/Comment.hpp>`: Level/list comment events
+- `<hiimjasmine00.user_data_api/include/events/ProfileComment.hpp>`: Profile comment events
+- `<hiimjasmine00.user_data_api/include/events/Friend.hpp>`: Friend & blocked user events
+- `<hiimjasmine00.user_data_api/include/events/FriendRequest.hpp>`: Friend request events
+- `<hiimjasmine00.user_data_api/include/events/GlobalScore.hpp>`: Leaderboard events
+- `<hiimjasmine00.user_data_api/include/events/LevelScore.hpp>`: Level leaderboard events
+- `<hiimjasmine00.user_data_api/include/events/SearchResult.hpp>`: User search events
+
+Each event also supports an optional account ID filter to limit results.
+
+The Events.hpp file also includes helper functions to make adding listeners easier, which are seen below. These functions automatically check if user data is being downloaded, and only call your function when the data is ready.
 
 ### Profile Events
 ```cpp
-#include <Geode/binding/GJUserScore.hpp>
 #include <Geode/modify/ProfilePage.hpp>
-#include <hiimjasmine00.user_data_api/include/events/Profile.hpp>
+#include <hiimjasmine00.user_data_api/include/Events.hpp>
 
 // Global listener
 $on_mod(Loaded) {
@@ -74,30 +85,20 @@ $on_mod(Loaded) {
 
 // Node-based listener
 class $modify(ProfilePage) {
-    struct Fields {
-        bool m_loaded;
-    };
-
     void loadPageFromUserInfo(GJUserScore* score) {
         ProfilePage::loadPageFromUserInfo(score);
 
-        auto fields = m_fields.self();
-        if (fields->m_loaded) return;
-
-        fields->m_loaded = true;
-
-        addEventListener<user_data::ProfileFilter>([](GJUserScore* score) {
+        user_data::handleProfilePage(this, [this](GJUserScore* score) {
             // Do something
-        }, score->m_accountID);
+        });
     }
 };
 ```
 
-### Comment Events
+### Level/List Comment Events
 ```cpp
-#include <Geode/binding/GJComment.hpp>
 #include <Geode/modify/CommentCell.hpp>
-#include <hiimjasmine00.user_data_api/include/events/Comment.hpp>
+#include <hiimjasmine00.user_data_api/include/Events.hpp>
 
 // Global listener
 $on_mod(Loaded) {
@@ -113,18 +114,43 @@ class $modify(CommentCell) {
 
         if (m_accountComment) return;
 
-        addEventListener<user_data::CommentFilter>([](GJComment* comment) {
+        user_data::handleCommentCell(this, [this](GJComment* comment) {
             // Do something
-        }, comment->m_accountID);
+        });
+    }
+};
+```
+
+### Profile Comment Events
+```cpp
+#include <Geode/modify/CommentCell.hpp>
+#include <hiimjasmine00.user_data_api/include/Events.hpp>
+
+// Global listener
+$on_mod(Loaded) {
+    new geode::EventListener(+[](GJComment* comment) {
+        // Do something
+    }, user_data::ProfileCommentFilter());
+}
+
+// Node-based listener
+class $modify(CommentCell) {
+    void loadFromComment(GJComment* comment) {
+        CommentCell::loadFromComment(comment);
+
+        if (!m_accountComment) return;
+
+        user_data::handleCommentCell(this, [this](GJComment* comment) {
+            // Do something
+        });
     }
 };
 ```
 
 ### Friend & Blocked User Events
 ```cpp
-#include <Geode/binding/GJUserScore.hpp>
 #include <Geode/modify/GJUserCell.hpp>
-#include <hiimjasmine00.user_data_api/include/events/Friend.hpp>
+#include <hiimjasmine00.user_data_api/include/Events.hpp>
 
 // Global listener
 $on_mod(Loaded) {
@@ -141,19 +167,18 @@ class $modify(GJUserCell) {
         auto friendReqStatus = score->m_friendReqStatus;
         if (friendReqStatus != 1 && friendReqStatus != 2) return;
 
-        addEventListener<user_data::FriendFilter>([](GJUserScore* score) {
+        user_data::handleUserCell(this, [this](GJUserScore* score) {
             // Do something
-        }, score->m_accountID);
+        });
     }
 };
 ```
 
 ### Friend Request Events
 ```cpp
-#include <Geode/binding/GJUserScore.hpp>
 #include <Geode/modify/GJRequestCell.hpp>
 #include <Geode/modify/GJUserCell.hpp>
-#include <hiimjasmine00.user_data_api/include/events/FriendRequest.hpp>
+#include <hiimjasmine00.user_data_api/include/Events.hpp>
 
 // Global listener
 $on_mod(Loaded) {
@@ -167,9 +192,9 @@ class $modify(GJRequestCell) {
     void loadFromScore(GJUserScore* score) {
         GJRequestCell::loadFromScore(score);
 
-        addEventListener<user_data::FriendRequestFilter>([](GJUserScore* score) {
+        user_data::handleRequestCell(this, [this](GJUserScore* score) {
             // Do something
-        }, score->m_accountID);
+        });
     }
 };
 class $modify(GJUserCell) {
@@ -178,18 +203,17 @@ class $modify(GJUserCell) {
 
         if (score->m_friendReqStatus != 4) return;
 
-        addEventListener<user_data::FriendRequestFilter>([](GJUserScore* score) {
+        user_data::handleUserCell(this, [this](GJUserScore* score) {
             // Do something
-        }, score->m_accountID);
+        });
     }
 };
 ```
 
 ### Leaderboard Events
 ```cpp
-#include <Geode/binding/GJUserScore.hpp>
 #include <Geode/modify/GJScoreCell.hpp>
-#include <hiimjasmine00.user_data_api/include/events/GlobalScore.hpp>
+#include <hiimjasmine00.user_data_api/include/Events.hpp>
 
 // Global listener
 $on_mod(Loaded) {
@@ -205,18 +229,17 @@ class $modify(GJScoreCell) {
 
         if (score->m_scoreType == 2) return;
 
-        addEventListener<user_data::GlobalScoreFilter>([](GJUserScore* score) {
+        user_data::handleScoreCell(this, [this](GJUserScore* score) {
             // Do something
-        }, score->m_accountID);
+        });
     }
 };
 ```
 
 ### Level Leaderboard Events
 ```cpp
-#include <Geode/binding/GJUserScore.hpp>
 #include <Geode/modify/GJLevelScoreCell.hpp>
-#include <hiimjasmine00.user_data_api/include/events/LevelScore.hpp>
+#include <hiimjasmine00.user_data_api/include/Events.hpp>
 
 // Global listener
 $on_mod(Loaded) {
@@ -230,18 +253,17 @@ class $modify(GJLevelScoreCell) {
     void loadFromScore(GJUserScore* score) {
         GJLevelScoreCell::loadFromScore(score);
 
-        addEventListener<user_data::LevelScoreFilter>([](GJUserScore* score) {
+        user_data::handleLevelScoreCell(this, [this](GJUserScore* score) {
             // Do something
-        }, score->m_accountID);
+        });
     }
 };
 ```
 
 ### User Search Events
 ```cpp
-#include <Geode/binding/GJUserScore.hpp>
 #include <Geode/modify/GJScoreCell.hpp>
-#include <hiimjasmine00.user_data_api/include/events/SearchResult.hpp>
+#include <hiimjasmine00.user_data_api/include/Events.hpp>
 
 // Global listener
 $on_mod(Loaded) {
@@ -257,9 +279,9 @@ class $modify(GJScoreCell) {
 
         if (score->m_scoreType != 2) return;
 
-        addEventListener<user_data::SearchResultFilter>([](GJUserScore* score) {
+        user_data::handleScoreCell(this, [this](GJUserScore* score) {
             // Do something
-        }, score->m_accountID);
+        });
     }
 };
 ```
