@@ -20,11 +20,6 @@ bool enabled = true;
 std::unordered_map<std::string, matjson::Value> userData;
 std::unordered_set<std::string> pendingKeys;
 
-$execute {
-    enabled = argon::getBaseServerUrl().rfind("://www.boomlings.com/database") != std::string::npos;
-    if (!enabled) log::error("GDPS detected, User Data API disabled");
-}
-
 $on_mod(Loaded) {
     auto res = argon::startAuth([](Result<std::string> res) {
         if (res.isErr()) log::error("Argon authentication failed: {}", res.unwrapErr());
@@ -151,6 +146,9 @@ void fetchData(GameLevelManager* manager, const std::string& key, int id = 0) {
 
 class $modify(UDAGameLevelManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAGameLevelManager, GameLevelManager>>& self) {
+        enabled = argon::getBaseServerUrl().rfind("://www.boomlings.com/database") != std::string::npos;
+        if (!enabled) log::error("GDPS detected, User Data API disabled");
+
         for (auto& [name, hook] : self.m_hooks) {
             if (!name.starts_with("GameLevelManager::get")) continue;
             hook->setAutoEnable(enabled);
