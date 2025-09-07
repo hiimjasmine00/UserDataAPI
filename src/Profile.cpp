@@ -1,23 +1,10 @@
 #include "Internal.hpp"
 #include <events/Profile.hpp>
 #include <Geode/binding/GJFriendRequest.hpp>
-#include <Geode/binding/GJUserScore.hpp>
 #include <Geode/binding/UserInfoDelegate.hpp>
 #include <Geode/modify/GameLevelManager.hpp>
-#include <Geode/utils/web.hpp>
 
 using namespace geode::prelude;
-
-void applyProfileData(CCNode* node, const matjson::Value& data) {
-    auto score = static_cast<GJUserScore*>(node);
-    auto id = score->m_accountID;
-    if (auto value = data.get(fmt::to_string(id))) {
-        for (auto& [k, v] : value.unwrap()) {
-            score->setUserObject(fmt::format("{}"_spr, k), CCString::create(v.dump(0)));
-        }
-        user_data::ProfileEvent(score, id).post();
-    }
-}
 
 class $modify(UDAProfileManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAProfileManager, GameLevelManager>>& self) {
@@ -27,7 +14,7 @@ class $modify(UDAProfileManager, GameLevelManager) {
     void getGJUserInfo(int accountID) {
         GameLevelManager::getGJUserInfo(accountID);
 
-        user_data::internal::fetchData(this, accountID, fmt::format("account_{}", accountID), applyProfileData);
+        fetchData<user_data::ProfileFilter>(this, fmt::format("account_{}", accountID), accountID);
     }
 
     void onGetGJUserInfoCompleted(gd::string response, gd::string tag) {
@@ -35,20 +22,20 @@ class $modify(UDAProfileManager, GameLevelManager) {
 
         auto accountID = getSplitIntFromKey(tag.c_str(), 1);
         if (response == "-1") {
-            if (m_userInfoDelegate) {
-                m_userInfoDelegate->getUserInfoFailed(accountID);
-            }
+            if (m_userInfoDelegate) m_userInfoDelegate->getUserInfoFailed(accountID);
             return;
         }
+
+        auto dataValues = prepareData(tag);
 
         auto dict = responseToDict(response, false);
         auto score = GJUserScore::create(dict);
         if (!score) {
-            if (m_userInfoDelegate) {
-                m_userInfoDelegate->getUserInfoFailed(accountID);
-            }
+            if (m_userInfoDelegate) m_userInfoDelegate->getUserInfoFailed(accountID);
             return;
         }
+
+        applyData<user_data::ProfileEvent>(score, score->m_accountID, dataValues, pendingKeys.contains(tag));
 
         storeUserInfo(score);
         if (score->m_friendReqStatus == 3) {
@@ -57,9 +44,6 @@ class $modify(UDAProfileManager, GameLevelManager) {
             storeFriendRequest(request);
         }
 
-        user_data::internal::applyData(score, tag, applyProfileData);
-        if (m_userInfoDelegate) {
-            m_userInfoDelegate->getUserInfoFinished(score);
-        }
+        if (m_userInfoDelegate) m_userInfoDelegate->getUserInfoFinished(score);
     }
 };

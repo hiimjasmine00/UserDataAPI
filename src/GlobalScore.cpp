@@ -1,23 +1,9 @@
 #include "Internal.hpp"
 #include <events/GlobalScore.hpp>
-#include <Geode/binding/GJUserScore.hpp>
 #include <Geode/binding/LeaderboardManagerDelegate.hpp>
 #include <Geode/modify/GameLevelManager.hpp>
-#include <Geode/utils/web.hpp>
 
 using namespace geode::prelude;
-
-void applyGlobalScoreData(CCArray* scores, const matjson::Value& data) {
-    for (auto score : CCArrayExt<GJUserScore*>(scores)) {
-        auto id = score->m_accountID;
-        if (auto value = data.get(fmt::to_string(id))) {
-            for (auto& [k, v] : value.unwrap()) {
-                score->setUserObject(fmt::format("{}"_spr, k), CCString::create(v.dump(0)));
-            }
-            user_data::GlobalScoreEvent(score, id).post();
-        }
-    }
-}
 
 class $modify(UDAGlobalScoreManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAGlobalScoreManager, GameLevelManager>>& self) {
@@ -27,20 +13,25 @@ class $modify(UDAGlobalScoreManager, GameLevelManager) {
     void getLeaderboardScores(const char* key) {
         GameLevelManager::getLeaderboardScores(key);
 
-        user_data::internal::fetchData(this, key, applyGlobalScoreData);
+        fetchData<user_data::GlobalScoreFilter>(this, key);
     }
 
     void onGetLeaderboardScoresCompleted(gd::string response, gd::string tag) {
         removeDLFromActive(tag.c_str());
 
         if (response == "-1") {
-            if (m_leaderboardManagerDelegate) {
-                m_leaderboardManagerDelegate->loadLeaderboardFailed(tag.c_str());
-            }
+            if (m_leaderboardManagerDelegate) m_leaderboardManagerDelegate->loadLeaderboardFailed(tag.c_str());
             return;
         }
 
+        auto dataValues = prepareData(tag);
+
         auto scores = createAndGetScores(response, tag == "leaderboard_creator" ? GJScoreType::Creator : GJScoreType::Top);
+        auto pending = pendingKeys.contains(tag);
+        for (auto score : CCArrayExt<GJUserScore*>(scores)) {
+            applyData<user_data::GlobalScoreEvent>(score, score->m_accountID, dataValues, pending);
+        }
+
         if (tag == "leaderboard_friends") {
             auto scoresData = scores->data;
             auto scoresArr = reinterpret_cast<GJUserScore**>(scoresData->arr);
@@ -57,9 +48,6 @@ class $modify(UDAGlobalScoreManager, GameLevelManager) {
         }
 
         storeSearchResult(scores, " ", tag.c_str());
-        user_data::internal::applyData(scores, tag, applyGlobalScoreData);
-        if (m_leaderboardManagerDelegate) {
-            m_leaderboardManagerDelegate->loadLeaderboardFinished(scores, tag.c_str());
-        }
+        if (m_leaderboardManagerDelegate) m_leaderboardManagerDelegate->loadLeaderboardFinished(scores, tag.c_str());
     }
 };
