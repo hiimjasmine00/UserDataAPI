@@ -7,7 +7,10 @@ using namespace geode::prelude;
 
 class $modify(UDAGlobalScoreManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAGlobalScoreManager, GameLevelManager>>& self) {
-        (void)self.setHookPriority("GameLevelManager::onGetLeaderboardScoresCompleted", Priority::Replace);
+        for (auto& [name, hook] : self.m_hooks) {
+            if (name == "GameLevelManager::onGetLeaderboardScoresCompleted") hook->setPriority(Priority::Replace);
+            hook->setAutoEnable(enabled);
+        }
     }
 
     void getLeaderboardScores(const char* key) {

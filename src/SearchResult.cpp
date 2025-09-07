@@ -8,7 +8,10 @@ using namespace geode::prelude;
 
 class $modify(UDASearchResultManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDASearchResultManager, GameLevelManager>>& self) {
-        (void)self.setHookPriority("GameLevelManager::onGetUsersCompleted", Priority::Replace);
+        for (auto& [name, hook] : self.m_hooks) {
+            if (name == "GameLevelManager::onGetUsersCompleted") hook->setPriority(Priority::Replace);
+            hook->setAutoEnable(enabled);
+        }
     }
 
     void getUsers(GJSearchObject* object) {

@@ -7,7 +7,10 @@ using namespace geode::prelude;
 
 class $modify(UDAProfileCommentManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAProfileCommentManager, GameLevelManager>>& self) {
-        (void)self.setHookPriority("GameLevelManager::onGetAccountCommentsCompleted", Priority::Replace);
+        for (auto& [name, hook] : self.m_hooks) {
+            if (name == "GameLevelManager::onGetAccountCommentsCompleted") hook->setPriority(Priority::Replace);
+            hook->setAutoEnable(enabled);
+        }
     }
 
     void getAccountComments(int id, int page, int total) {

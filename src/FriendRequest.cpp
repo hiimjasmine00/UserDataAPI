@@ -8,7 +8,10 @@ using namespace geode::prelude;
 
 class $modify(UDAFriendRequestManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAFriendRequestManager, GameLevelManager>>& self) {
-        (void)self.setHookPriority("GameLevelManager::onGetFriendRequestsCompleted", Priority::Replace);
+        for (auto& [name, hook] : self.m_hooks) {
+            if (name == "GameLevelManager::onGetFriendRequestsCompleted") hook->setPriority(Priority::Replace);
+            hook->setAutoEnable(enabled);
+        }
     }
 
     void getFriendRequests(bool sent, int page, int total) {

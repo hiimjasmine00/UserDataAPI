@@ -7,7 +7,10 @@ using namespace geode::prelude;
 
 class $modify(UDAFriendManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAFriendManager, GameLevelManager>>& self) {
-        (void)self.setHookPriority("GameLevelManager::onGetUserListCompleted", Priority::Replace);
+        for (auto& [name, hook] : self.m_hooks) {
+            if (name == "GameLevelManager::onGetUserListCompleted") hook->setPriority(Priority::Replace);
+            hook->setAutoEnable(enabled);
+        }
     }
 
     void getUserList(UserListType type) {

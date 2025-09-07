@@ -8,11 +8,14 @@ using namespace geode::prelude;
 
 class $modify(UDALevelScoreManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDALevelScoreManager, GameLevelManager>>& self) {
-        #ifdef GEODE_IS_WINDOWS
-        (void)self.setHookPriority("GameLevelManager::handleIt", Priority::Replace);
-        #else
-        (void)self.setHookPriority("GameLevelManager::onGetLevelLeaderboardCompleted", Priority::Replace);
-        #endif
+        for (auto& [name, hook] : self.m_hooks) {
+            #ifdef GEODE_IS_WINDOWS
+            if (name == "GameLevelManager::handleIt") hook->setPriority(Priority::Replace);
+            #else
+            if (name == "GameLevelManager::onGetLevelLeaderboardCompleted") hook->setPriority(Priority::Replace);
+            #endif
+            hook->setAutoEnable(enabled);
+        }
     }
 
     void getLevelLeaderboard(GJGameLevel* level, LevelLeaderboardType type, LevelLeaderboardMode mode) {
