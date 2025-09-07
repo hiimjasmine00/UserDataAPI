@@ -11,9 +11,7 @@ set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
 project(UserDataAPI VERSION 1.2.0)
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
-
-add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} SHARED src/UserDataAPI.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
@@ -29,7 +27,7 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
-CPMAddPackage("gh:GlobedGD/argon@1.1.9")
+CPMAddPackage("gh:hiimjasmine00/argon#c6408c6")
 target_link_libraries(${PROJECT_NAME} argon)
 
 setup_geode_mod(${PROJECT_NAME})

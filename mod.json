@@ -17,12 +17,6 @@
             "include/events/*.hpp"
         ]
     },
-    "dependencies": {
-        "km7dev.server_api": {
-            "version": ">=v2.0.0",
-            "importance": "suggested"
-        }
-    },
     "incompatibilities": {
         "hiimjasmine00.player_data_api": {
             "importance": "superseded",
