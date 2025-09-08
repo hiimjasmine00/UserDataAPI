@@ -1,4 +1,7 @@
 # User Data API Changelog
+## v1.2.1 (2025-09-07)
+- Fixed hook priority not being set correctly (I blame GitHub Copilot for this one)
+
 ## v1.2.0 (2025-09-07)
 - Changed downloading logic to download concurrently with vanilla requests
 - Added `user_data::handle...` helper functions to simplify event handling in table cells and profile pages

@@ -150,7 +150,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         if (!enabled) log::error("GDPS detected, User Data API disabled");
 
         for (auto& [name, hook] : self.m_hooks) {
-            if (!name.starts_with("GameLevelManager::get")) continue;
+            if (!name.starts_with("GameLevelManager::get")) hook->setPriority(Priority::Replace);
             hook->setAutoEnable(enabled);
         }
     }
