@@ -1,4 +1,7 @@
 # User Data API Changelog
+## v1.2.2 (2025-09-13)
+- Fixed a bug where the `user_data::handle...` functions would copy the lambda instead of moving it, causing issues with captures
+
 ## v1.2.1 (2025-09-07)
 - Fixed hook priority not being set correctly (I blame GitHub Copilot for this one)
 

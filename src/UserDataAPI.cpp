@@ -296,7 +296,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
             if (auto score = GJUserScore::create(dict)) {
                 if (auto request = GJFriendRequest::create(dict)) {
                     score->m_friendReqStatus = status;
-                    request->m_is36 = !score->m_newFriendRequest;
+                    request->m_isRead = !score->m_newFriendRequest;
                     request->m_accountID = score->m_accountID;
                     applyData<user_data::FriendRequestEvent>(score, score->m_accountID, dataValues, pending);
                     scores->addObject(score);

@@ -8,7 +8,7 @@
     },
     "id": "hiimjasmine00.user_data_api",
     "name": "User Data API",
-    "version": "v1.2.1",
+    "version": "v1.2.2",
     "developer": "hiimjasmine00",
     "description": "An API for managing extra user data.",
     "api": {

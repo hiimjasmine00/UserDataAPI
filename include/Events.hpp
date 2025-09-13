@@ -33,8 +33,8 @@ namespace user_data {
         if (!accountComment && !score) return;
 
         if (comment->getUserObject("hiimjasmine00.user_data_api/downloading")) {
-            if (accountComment) cell->addEventListener<ProfileCommentFilter>(fn, comment->m_accountID);
-            else if (score) cell->addEventListener<CommentFilter>(fn, score->m_accountID);
+            if (accountComment) cell->addEventListener<ProfileCommentFilter>(std::forward<F>(fn), comment->m_accountID);
+            else if (score) cell->addEventListener<CommentFilter>(std::forward<F>(fn), score->m_accountID);
         }
         else fn(comment);
     }
@@ -51,7 +51,7 @@ namespace user_data {
         if (!score) return;
 
         if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
-            cell->addEventListener<LevelScoreFilter>(fn, score->m_accountID);
+            cell->addEventListener<LevelScoreFilter>(std::forward<F>(fn), score->m_accountID);
         }
         else fn(score);
     }
@@ -68,7 +68,7 @@ namespace user_data {
         if (!score) return;
 
         if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
-            score->addEventListener<ProfileFilter>(fn, score->m_accountID);
+            score->addEventListener<ProfileFilter>(std::forward<F>(fn), score->m_accountID);
         }
         else fn(score);
     }
@@ -85,7 +85,7 @@ namespace user_data {
         if (!score) return;
 
         if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
-            cell->addEventListener<FriendRequestFilter>(fn, score->m_accountID);
+            cell->addEventListener<FriendRequestFilter>(std::forward<F>(fn), score->m_accountID);
         }
         else fn(score);
     }
@@ -102,8 +102,8 @@ namespace user_data {
         if (!score) return;
 
         if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
-            if (score->m_scoreType == 2) cell->addEventListener<SearchResultFilter>(fn, score->m_accountID);
-            else cell->addEventListener<GlobalScoreFilter>(fn, score->m_accountID);
+            if (score->m_scoreType == 2) cell->addEventListener<SearchResultFilter>(std::forward<F>(fn), score->m_accountID);
+            else cell->addEventListener<GlobalScoreFilter>(std::forward<F>(fn), score->m_accountID);
         }
         else fn(score);
     }
@@ -122,10 +122,10 @@ namespace user_data {
         if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
             switch (score->m_friendReqStatus) {
                 case 1: case 2:
-                    cell->addEventListener<FriendFilter>(fn, score->m_accountID);
+                    cell->addEventListener<FriendFilter>(std::forward<F>(fn), score->m_accountID);
                     break;
                 case 4:
-                    cell->addEventListener<FriendRequestFilter>(fn, score->m_accountID);
+                    cell->addEventListener<FriendRequestFilter>(std::forward<F>(fn), score->m_accountID);
                     break;
             }
         }
