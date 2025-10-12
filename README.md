@@ -286,5 +286,9 @@ class $modify(GJScoreCell) {
 };
 ```
 
+## Credits
+- [dankmeme01](https://gdbrowser.com/u/9735891) - Host for the mod's servers
+- [hiimjasmine00](https://gdbrowser.com/u/7466002) - Creator of the mod
+
 ## License
 This mod is licensed under the [MIT License](https://github.com/hiimjasmine00/UserDataAPI/blob/main/LICENSE).

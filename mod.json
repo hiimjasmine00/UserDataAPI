@@ -1,5 +1,5 @@
 {
-    "geode": "4.8.0",
+    "geode": "4.9.0",
     "gd": {
         "win": "2.2074",
         "android": "2.2074",
@@ -8,7 +8,7 @@
     },
     "id": "hiimjasmine00.user_data_api",
     "name": "User Data API",
-    "version": "v1.2.2",
+    "version": "v1.2.3",
     "developer": "hiimjasmine00",
     "description": "An API for managing extra user data.",
     "api": {

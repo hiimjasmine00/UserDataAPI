@@ -1,4 +1,8 @@
 # User Data API Changelog
+## v1.2.3 (2025-10-11)
+- Changed the server to a new one hosted by [dankmeme01](user:9735891)
+- Reduced the amount of data requested from the server when fetching account comments
+
 ## v1.2.2 (2025-09-13)
 - Fixed a bug where the `user_data::handle...` functions would copy the lambda instead of moving it, causing issues with captures
 

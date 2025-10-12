@@ -40,7 +40,7 @@ void user_data::upload(const matjson::Value& data, std::string_view id) {
             web::WebRequest()
                 .bodyJSON(data)
                 .header("Authorization", res.unwrap())
-                .post(fmt::format("https://playerdata.hiimjasmine00.com/v3/upload?id={}&mod={}",
+                .post(fmt::format("https://userdataapi.dankmeme.dev/v1/upload?id={}&mod={}",
                     GJAccountManager::get()->m_accountID, id))
                 .listen([](web::WebResponse* res) {
                     if (!res->ok()) {
@@ -82,7 +82,7 @@ void fetchData(GameLevelManager* manager, const std::string& key, int id = 0) {
     using T = std::remove_pointer_t<function::Arg<0, typename U::Callback>>;
     pendingKeys.insert(key);
     web::WebRequest()
-        .get(fmt::format("https://playerdata.hiimjasmine00.com/v3/data{}", id > 0 ? fmt::format("?ids={}", id) : ""))
+        .get(fmt::format("https://userdataapi.dankmeme.dev/v1/data{}", id > 0 ? fmt::format("?players={}", id) : ""))
         .listen([manager, id, key](web::WebResponse* res) {
             pendingKeys.erase(key);
 
@@ -144,6 +144,34 @@ void fetchData(GameLevelManager* manager, const std::string& key, int id = 0) {
         });
 }
 
+#ifdef GEODE_IS_ANDROID
+int scoreCompare(const void* a, const void* b);
+#else
+#ifdef GEODE_IS_WINDOWS
+void* wrapFunction(uintptr_t address, const tulip::hook::WrapperMetadata& metadata) {
+    auto wrapped = hook::createWrapper(reinterpret_cast<void*>(address), metadata);
+    if (wrapped.isErr()) {
+        throw std::runtime_error(wrapped.unwrapErr());
+    }
+    return wrapped.unwrap();
+}
+#else
+void* wrapFunction(uintptr_t address, const tulip::hook::WrapperMetadata& metadata);
+#endif
+
+int scoreCompare(const void* a, const void* b) {
+    using FunctionType = int(*)(const void*, const void*);
+    static auto func = wrapFunction(
+        base::get() + GEODE_WINDOWS(0x1408a0) GEODE_ARM_MAC(0x463f8c) GEODE_INTEL_MAC(0x504830) GEODE_IOS(0x8ba08),
+        {
+            .m_convention = hook::createConvention(tulip::hook::TulipConvention::Default),
+            .m_abstract = tulip::hook::AbstractFunction::from(FunctionType(nullptr))
+        }
+    );
+    return reinterpret_cast<FunctionType>(func)(a, b);
+}
+#endif
+
 class $modify(UDAGameLevelManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAGameLevelManager, GameLevelManager>>& self) {
         enabled = argon::getBaseServerUrl().rfind("://www.boomlings.com/database") != std::string::npos;
@@ -157,7 +185,8 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
     void getLevelComments(int id, int page, int total, int mode, CommentKeyType type) {
         GameLevelManager::getLevelComments(id, page, total, mode, type);
-        fetchData<user_data::CommentFilter>(this, fmt::format("comment_{}_{}_{}_{}", id, page, mode, (int)type));
+        fetchData<user_data::CommentFilter>(this, fmt::format("comment_{}_{}_{}_{}", id, page, mode, (int)type),
+            type == CommentKeyType::User ? accountIDForUserID(id) : 0);
     }
 
     void getUserList(UserListType type) {
@@ -187,7 +216,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
     void getAccountComments(int id, int page, int total) {
         GameLevelManager::getAccountComments(id, page, total);
-        fetchData<user_data::ProfileCommentFilter>(this, fmt::format("a_{}_{}", id, page));
+        fetchData<user_data::ProfileCommentFilter>(this, fmt::format("a_{}_{}", id, page), id);
     }
 
     void getUsers(GJSearchObject* object) {
@@ -328,13 +357,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
         if (tag == "leaderboard_friends") {
             auto scoresData = scores->data;
-            auto scoresArr = reinterpret_cast<GJUserScore**>(scoresData->arr);
-            std::sort(scoresArr, scoresArr + scoresData->num, [](GJUserScore* a, GJUserScore* b) {
-                if (a->m_stars != b->m_stars) return a->m_stars > b->m_stars;
-                if (a->m_demons != b->m_demons) return a->m_demons > b->m_demons;
-                if (a->m_secretCoins != b->m_secretCoins) return a->m_secretCoins > b->m_secretCoins;
-                return a->m_userCoins > b->m_userCoins;
-            });
+            qsort(scoresData->arr, scoresData->num, sizeof(GJUserScore*), scoreCompare);
             auto rank = 1;
             for (auto score : CCArrayExt<GJUserScore*>(scores)) {
                 score->m_playerRank = rank++;
