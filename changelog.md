@@ -1,4 +1,7 @@
 # User Data API Changelog
+## v1.2.4 (2025-10-25)
+- Reverted downloading logic changes from v1.2.0 due to bandwidth issues
+
 ## v1.2.3 (2025-10-11)
 - Changed the server to a new one hosted by [dankmeme01](user:9735891)
 - Reduced the amount of data requested from the server when fetching account comments
