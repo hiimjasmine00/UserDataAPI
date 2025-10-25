@@ -99,7 +99,6 @@ void fetchData(CCObject* object) {
     }
 
     web::WebRequest().get(url).listen([objectRef = WeakRef(object)](web::WebResponse* res) {
-        log::info("Fetched user data");
         if (!res->ok()) return log::error("Failed to get profile data: {}", std::string(std::from_range, res->data()));
 
         auto json = res->json();
