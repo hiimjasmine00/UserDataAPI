@@ -11,6 +11,8 @@
 #include <Geode/loader/Dispatch.hpp>
 #include <Geode/loader/GameEvent.hpp>
 #include <Geode/modify/GameLevelManager.hpp>
+#include <jasmine/convert.hpp>
+#include <jasmine/web.hpp>
 #include <UserDataAPI.hpp>
 
 using namespace geode::prelude;
@@ -50,7 +52,7 @@ void user_data::upload(const matjson::Value& data, std::string_view id) {
                 .post(fmt::format("https://userdataapi.dankmeme.dev/v1/upload?id={}&mod={}",
                     GJAccountManager::get()->m_accountID, id))
                 .listen([](web::WebResponse* res) {
-                    if (!res->ok()) log::error("Failed to upload user data: {}", std::string(std::from_range, res->data()));
+                    if (!res->ok()) log::error("Failed to upload user data: {}", jasmine::web::getString(res));
                 });
         }
         else if (res->isErr()) log::error("Argon authentication failed: {}", res->unwrapErr());
@@ -99,12 +101,12 @@ void fetchData(CCObject* object) {
     }
 
     web::WebRequest().get(url).listen([objectRef = WeakRef(object)](web::WebResponse* res) {
-        if (!res->ok()) return log::error("Failed to get profile data: {}", std::string(std::from_range, res->data()));
+        if (!res->ok()) return log::error("Failed to get profile data: {}", jasmine::web::getString(res));
 
         auto json = res->json();
         if (json.isErr()) return log::error("Failed to parse profile data: {}", json.unwrapErr());
 
-        auto data = json.unwrap();
+        auto data = std::move(json).unwrap();
         if (!data.isObject()) return log::error("Invalid profile data format");
 
         if (data.size() == 0) return;
@@ -114,8 +116,7 @@ void fetchData(CCObject* object) {
 
         std::unordered_map<int, matjson::Value> dataValues;
         for (auto& [k, v] : data) {
-            auto id = 0;
-            if (std::from_chars(k.data(), k.data() + k.size(), id).ec == std::errc()) dataValues[id] = v;
+            if (auto id = jasmine::convert::getInt<int>(k)) dataValues[id.value()] = v;
         }
 
         if constexpr (std::is_same_v<U, user_data::ProfileFilter>) {
