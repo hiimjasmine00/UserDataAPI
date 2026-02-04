@@ -29,7 +29,7 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
-CPMAddPackage("gh:GlobedGD/argon@1.4.1")
+CPMAddPackage("gh:hiimjasmine00/argon#8a06b63")
 CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.3.2")
 target_link_libraries(${PROJECT_NAME} argon jasmine-tools)
 

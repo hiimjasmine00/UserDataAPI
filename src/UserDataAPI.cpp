@@ -188,7 +188,7 @@ int scoreCompareUserCoins(const void* a, const void* b) {
 
 class $modify(UDAGameLevelManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAGameLevelManager, GameLevelManager>>& self) {
-        enabled = jasmine::gdps::getURL().rfind("://www.boomlings.com/database") != std::string::npos;
+        enabled = jasmine::gdps::isActive();
         if (!enabled) log::error("GDPS detected, User Data API disabled");
 
         for (auto& [name, hook] : self.m_hooks) {
