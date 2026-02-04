@@ -9,7 +9,7 @@ endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(UserDataAPI VERSION 1.2.4)
+project(UserDataAPI VERSION 2.0.0)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
@@ -29,8 +29,8 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
-CPMAddPackage("gh:hiimjasmine00/argon#97834e0")
-CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.0.1")
+CPMAddPackage("gh:GlobedGD/argon@1.4.1")
+CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.3.2")
 target_link_libraries(${PROJECT_NAME} argon jasmine-tools)
 
 setup_geode_mod(${PROJECT_NAME})

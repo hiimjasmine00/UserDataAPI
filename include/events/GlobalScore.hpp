@@ -4,35 +4,9 @@
 
 namespace user_data {
     /// Represents an event for a global leaderboard score.
-    class GlobalScoreEvent : public geode::Event {
-    protected:
-        GJUserScore* m_score;
-        int m_id;
+    class GlobalScoreEvent : public geode::GlobalEvent<GlobalScoreEvent, void(GJUserScore*), void(GJUserScore*), int> {
     public:
-        GlobalScoreEvent(GJUserScore* score, int id) : m_score(score), m_id(id) {}
-
-        GJUserScore* getScore() const { return m_score; }
-        int getID() const { return m_id; }
-    };
-
-    /// Represents a filter for GlobalScoreEvent.
-    class GlobalScoreFilter : public geode::EventFilter<GlobalScoreEvent> {
-    protected:
-        int m_id;
-    public:
-        using Callback = void(GJUserScore*);
-
-        /// Constructs a GlobalScoreFilter for a global listener.
-        /// @param id The account ID to filter scores by
-        GlobalScoreFilter(int id = 0) : m_id(id) {}
-        /// Constructs a GlobalScoreFilter for a node-based listener.
-        /// @param id The account ID to filter scores by
-        GlobalScoreFilter(void*, int id = 0) : m_id(id) {}
-
-        template <typename F> requires (std::is_invocable_r_v<void, F, GJUserScore*>)
-        geode::ListenerResult handle(F&& fn, Event* event) {
-            if (m_id <= 0 || event->getID() == m_id) fn(event->getScore());
-            return geode::ListenerResult::Propagate;
-        }
+        using ObjectType = GJUserScore*;
+        using GlobalEvent::GlobalEvent;
     };
 }

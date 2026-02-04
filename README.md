@@ -13,26 +13,23 @@ To use User Data API, include it as a [dependency](https://docs.geode-sdk.org/mo
     "dependencies": {
         "hiimjasmine00.user_data_api": {
             "version": ">=v1.2.0",
-            "importance": "required"
+            "required": true
         }
     }
 }
 ```
 
-### Dependency Importance Levels
-- `required`: Mod **must** be installed for yours to run.
-- `recommended`: Installed automatically, but your mod can still run without it.
-- `suggested`: Not installed automatically.
+`"required"` can be set to `false` if you want your mod to work without User Data API.
 
 Then, include the headers in your code.
 
-**Required importance:**
+**Required dependency:**
 ```cpp
 #include <hiimjasmine00.user_data_api/include/Events.hpp>
 #include <hiimjasmine00.user_data_api/include/UserDataAPI.hpp>
 ```
 
-**Recommended/Suggested importance:**
+**Non-required dependency:**
 ```cpp
 #include <hiimjasmine00.user_data_api/include/Events.hpp>
 #define USER_DATA_API_EVENTS
@@ -78,9 +75,9 @@ The Events.hpp file also includes helper functions to make adding listeners easi
 
 // Global listener
 $on_mod(Loaded) {
-    new geode::EventListener(+[](GJUserScore* score) {
+    user_data::ProfileEvent().listen([](GJUserScore* score) {
         // Do something
-    }, user_data::ProfileFilter());
+    }).leak();
 }
 
 // Node-based listener
@@ -102,9 +99,9 @@ class $modify(ProfilePage) {
 
 // Global listener
 $on_mod(Loaded) {
-    new geode::EventListener(+[](GJComment* comment) {
+    user_data::CommentEvent().listen([](GJComment* comment) {
         // Do something
-    }, user_data::CommentFilter());
+    }).leak();
 }
 
 // Node-based listener
@@ -128,9 +125,9 @@ class $modify(CommentCell) {
 
 // Global listener
 $on_mod(Loaded) {
-    new geode::EventListener(+[](GJComment* comment) {
+    user_data::ProfileCommentEvent().listen([](GJComment* comment) {
         // Do something
-    }, user_data::ProfileCommentFilter());
+    }).leak();
 }
 
 // Node-based listener
@@ -154,9 +151,9 @@ class $modify(CommentCell) {
 
 // Global listener
 $on_mod(Loaded) {
-    new geode::EventListener(+[](GJUserScore* score) {
+    user_data::FriendEvent().listen([](GJUserScore* score) {
         // Do something
-    }, user_data::FriendFilter());
+    }).leak();
 }
 
 // Node-based listener
@@ -182,9 +179,9 @@ class $modify(GJUserCell) {
 
 // Global listener
 $on_mod(Loaded) {
-    new geode::EventListener(+[](GJUserScore* score) {
+    user_data::FriendRequestEvent().listen([](GJUserScore* score) {
         // Do something
-    }, user_data::FriendRequestFilter());
+    }).leak();
 }
 
 // Node-based listener
@@ -217,9 +214,9 @@ class $modify(GJUserCell) {
 
 // Global listener
 $on_mod(Loaded) {
-    new geode::EventListener(+[](GJUserScore* score) {
+    user_data::GlobalScoreEvent().listen([](GJUserScore* score) {
         // Do something
-    }, user_data::GlobalScoreFilter());
+    }).leak();
 }
 
 // Node-based listener
@@ -243,9 +240,9 @@ class $modify(GJScoreCell) {
 
 // Global listener
 $on_mod(Loaded) {
-    new geode::EventListener(+[](GJUserScore* score) {
+    user_data::LevelScoreEvent().listen([](GJUserScore* score) {
         // Do something
-    }, user_data::LevelScoreFilter());
+    }).leak();
 }
 
 // Node-based listener
@@ -267,9 +264,9 @@ class $modify(GJLevelScoreCell) {
 
 // Global listener
 $on_mod(Loaded) {
-    new geode::EventListener(+[](GJUserScore* score) {
+    user_data::SearchResultEvent().listen([](GJUserScore* score) {
         // Do something
-    }, user_data::SearchResultFilter());
+    }).leak();
 }
 
 // Node-based listener

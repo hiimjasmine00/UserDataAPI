@@ -3,94 +3,94 @@
 #include <Geode/binding/FriendRequestDelegate.hpp>
 #include <Geode/binding/GJAccountManager.hpp>
 #include <Geode/binding/GJFriendRequest.hpp>
+#include <Geode/binding/GJGameLevel.hpp>
 #include <Geode/binding/LeaderboardManagerDelegate.hpp>
 #include <Geode/binding/LevelCommentDelegate.hpp>
 #include <Geode/binding/LevelManagerDelegate.hpp>
 #include <Geode/binding/UserInfoDelegate.hpp>
 #include <Geode/binding/UserListDelegate.hpp>
-#include <Geode/loader/Dispatch.hpp>
 #include <Geode/loader/GameEvent.hpp>
 #include <Geode/modify/GameLevelManager.hpp>
 #include <jasmine/convert.hpp>
+#include <jasmine/gdps.hpp>
 #include <jasmine/web.hpp>
+#define GEODE_DEFINE_EVENT_EXPORTS
 #include <UserDataAPI.hpp>
 
 using namespace geode::prelude;
 
 bool enabled = true;
-std::vector<std::string> mods;
+std::vector<ZStringView> mods;
 
 $on_mod(Loaded) {
-    argon::startAuth().listen([](Result<std::string>* res) {
-        if (res->isErr()) log::error("Argon authentication failed: {}", res->unwrapErr());
+    async::spawn(argon::startAuth(), [](Result<std::string> res) {
+        if (res.isErr()) log::error("Argon authentication failed: {}", res.unwrapErr());
     });
-
-    new EventListener([](const matjson::Value& data, const std::string& id) {
-        user_data::upload(data, id);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<matjson::Value, std::string>("v1/upload"_spr));
-
-    new EventListener(+[](GameEvent*) {
-        for (auto mod : Loader::get()->getAllMods()) {
-            if (mod->isEnabled() && std::ranges::contains(mod->getMetadataRef().getDependencies(), GEODE_MOD_ID, &ModMetadata::Dependency::id)) {
-                auto modID = mod->getID();
-                if (modID == "camila314.comment-colors") modID = "camila314.comment-color";
-                mods.push_back(modID);
-            }
-        }
-    }, GameEventFilter(GameEventType::Loaded));
 }
 
-void user_data::upload(const matjson::Value& data, std::string_view id) {
+$on_game(ModsLoaded) {
+    for (auto mod : Loader::get()->getAllMods()) {
+        if (mod->isEnabled() && std::ranges::contains(mod->getMetadata().getDependencies(), GEODE_MOD_ID, &ModMetadata::Dependency::getID)) {
+            auto modID = mod->getID();
+            if (modID == "camila314.comment-colors") modID = "camila314.comment-color";
+            mods.push_back(modID);
+        }
+    }
+}
+
+void user_data::upload(matjson::Value data, std::string id) {
     if (!enabled) return;
 
-    argon::startAuth().listen([data, id = std::string(id)](Result<std::string>* res) {
-        if (res->isOk()) {
-            web::WebRequest()
-                .bodyJSON(data)
-                .header("Authorization", res->unwrap())
-                .post(fmt::format("https://userdataapi.dankmeme.dev/v1/upload?id={}&mod={}",
-                    GJAccountManager::get()->m_accountID, id))
-                .listen([](web::WebResponse* res) {
-                    if (!res->ok()) log::error("Failed to upload user data: {}", jasmine::web::getString(res));
-                });
+    async::spawn(argon::startAuth(), [data = std::move(data), id = std::move(id)](Result<std::string> res) {
+        if (res.isOk()) {
+            async::spawn(
+                web::WebRequest()
+                    .bodyJSON(data)
+                    .header("Authorization", std::move(res).unwrap())
+                    .post(fmt::format("https://userdataapi.dankmeme.dev/v1/upload?id={}&mod={}", GJAccountManager::get()->m_accountID, id)),
+                [](web::WebResponse res) {
+                    if (!res.ok()) log::error("Failed to upload user data: {}", jasmine::web::getString(&res));
+                }
+            );
         }
-        else if (res->isErr()) log::error("Argon authentication failed: {}", res->unwrapErr());
+        else if (res.isErr()) {
+            log::error("Argon authentication failed: {}", res.unwrapErr());
+        }
     });
 }
 
-template <std::derived_from<Event> U, std::derived_from<CCNode> T>
+template <class U, class T>
 void applyData(T* node, int id, const std::unordered_map<int, matjson::Value>& dataValues) {
     node->setUserObject("downloading"_spr, nullptr);
     if (auto it = dataValues.find(id); it != dataValues.end()) {
         for (auto& [k, v] : it->second) {
             node->setUserObject(fmt::format("{}"_spr, k), CCString::create(v.dump(0)));
         }
-        U(node, id).post();
+        U(id).send(node);
     }
 }
 
 template <class U>
 void fetchData(CCObject* object) {
-    using T = std::remove_pointer_t<function::Arg<0, typename U::Callback>>;
+    using T = U::ObjectType;
 
     if (!object) return;
-    if constexpr (!std::is_same_v<U, user_data::ProfileFilter>) {
+    if constexpr (!std::is_same_v<U, user_data::ProfileEvent>) {
         if (static_cast<CCArray*>(object)->count() == 0) return;
     }
 
     std::string url;
-    if constexpr (std::is_same_v<U, user_data::ProfileFilter>) {
+    if constexpr (std::is_same_v<U, user_data::ProfileEvent>) {
         url = fmt::format("https://userdataapi.dankmeme.dev/v1/data?players={}&mods={}",
             static_cast<GJUserScore*>(object)->m_accountID, fmt::join(mods, ","));
     }
     else {
         std::set<int> ids;
         for (auto obj : CCArrayExt<CCNode*>(static_cast<CCArray*>(object))) {
-            if constexpr (std::is_same_v<U, user_data::CommentFilter>) {
+            if constexpr (std::is_same_v<U, user_data::CommentEvent>) {
                 if (auto score = static_cast<GJComment*>(obj)->m_userScore) ids.insert(score->m_accountID);
             }
-            else if constexpr (std::is_same_v<U, user_data::ProfileCommentFilter>) {
+            else if constexpr (std::is_same_v<U, user_data::ProfileCommentEvent>) {
                 ids.insert(static_cast<GJComment*>(obj)->m_accountID);
             }
             else {
@@ -100,10 +100,10 @@ void fetchData(CCObject* object) {
         url = fmt::format("https://userdataapi.dankmeme.dev/v1/data?players={}&mods={}", fmt::join(ids, ","), fmt::join(mods, ","));
     }
 
-    web::WebRequest().get(url).listen([objectRef = WeakRef(object)](web::WebResponse* res) {
-        if (!res->ok()) return log::error("Failed to get profile data: {}", jasmine::web::getString(res));
+    async::spawn(web::WebRequest().get(std::move(url)), [objectRef = WeakRef(object)](web::WebResponse res) {
+        if (!res.ok()) return log::error("Failed to get profile data: {}", jasmine::web::getString(&res));
 
-        auto json = res->json();
+        auto json = res.json();
         if (json.isErr()) return log::error("Failed to parse profile data: {}", json.unwrapErr());
 
         auto data = std::move(json).unwrap();
@@ -116,28 +116,28 @@ void fetchData(CCObject* object) {
 
         std::unordered_map<int, matjson::Value> dataValues;
         for (auto& [k, v] : data) {
-            if (auto id = jasmine::convert::getInt<int>(k)) dataValues[id.value()] = v;
+            if (auto id = jasmine::convert::get<int>(k)) dataValues[id.value()] = v;
         }
 
-        if constexpr (std::is_same_v<U, user_data::ProfileFilter>) {
+        if constexpr (std::is_same_v<U, user_data::ProfileEvent>) {
             auto score = static_cast<GJUserScore*>(object);
-            applyData<typename U::Event>(score, score->m_accountID, dataValues);
+            applyData<U>(score, score->m_accountID, dataValues);
         }
-        else if constexpr (std::is_same_v<U, user_data::CommentFilter>) {
+        else if constexpr (std::is_same_v<U, user_data::CommentEvent>) {
             for (auto comment : CCArrayExt<GJComment*>(static_cast<CCArray*>(object))) {
                 if (auto score = comment->m_userScore) {
-                    applyData<typename U::Event>(comment, score->m_accountID, dataValues);
+                    applyData<U>(comment, score->m_accountID, dataValues);
                 }
             }
         }
-        else if constexpr (std::is_same_v<U, user_data::ProfileCommentFilter>) {
+        else if constexpr (std::is_same_v<U, user_data::ProfileCommentEvent>) {
             for (auto comment : CCArrayExt<GJComment*>(static_cast<CCArray*>(object))) {
-                applyData<typename U::Event>(comment, comment->m_accountID, dataValues);
+                applyData<U>(comment, comment->m_accountID, dataValues);
             }
         }
         else {
             for (auto score : CCArrayExt<GJUserScore*>(static_cast<CCArray*>(object))) {
-                applyData<typename U::Event>(score, score->m_accountID, dataValues);
+                applyData<U>(score, score->m_accountID, dataValues);
             }
         }
     });
@@ -145,35 +145,50 @@ void fetchData(CCObject* object) {
 
 #ifdef GEODE_IS_ANDROID
 int scoreCompare(const void* a, const void* b);
+int scoreCompareMoons(const void* a, const void* b);
+int scoreCompareDemons(const void* a, const void* b);
+int scoreCompareUserCoins(const void* a, const void* b);
 #else
-#ifdef GEODE_IS_WINDOWS
-void* wrapFunction(uintptr_t address, const tulip::hook::WrapperMetadata& metadata) {
-    auto wrapped = hook::createWrapper(reinterpret_cast<void*>(address), metadata);
+template <class F>
+void* wrapFunction(uintptr_t address) {
+    auto wrapped = hook::createWrapper(reinterpret_cast<void*>(base::get() + address), {
+		.m_convention = hook::createConvention(tulip::hook::TulipConvention::Default),
+		.m_abstract = tulip::hook::AbstractFunction::from(F(nullptr)),
+	});
     if (wrapped.isErr()) {
         throw std::runtime_error(wrapped.unwrapErr());
     }
     return wrapped.unwrap();
 }
-#else
-void* wrapFunction(uintptr_t address, const tulip::hook::WrapperMetadata& metadata);
-#endif
 
 int scoreCompare(const void* a, const void* b) {
     using FunctionType = int(*)(const void*, const void*);
-    static auto func = wrapFunction(
-        base::get() + GEODE_WINDOWS(0x1408a0) GEODE_ARM_MAC(0x463f8c) GEODE_INTEL_MAC(0x504830) GEODE_IOS(0x8ba08),
-        {
-            .m_convention = hook::createConvention(tulip::hook::TulipConvention::Default),
-            .m_abstract = tulip::hook::AbstractFunction::from(FunctionType(nullptr))
-        }
-    );
+    static auto func = wrapFunction<FunctionType>(GEODE_WINDOWS(0x142a00) GEODE_ARM_MAC(0x470e64) GEODE_INTEL_MAC(0x51a730) GEODE_IOS(0x8794c));
+    return reinterpret_cast<FunctionType>(func)(a, b);
+}
+
+int scoreCompareMoons(const void* a, const void* b) {
+    using FunctionType = int(*)(const void*, const void*);
+    static auto func = wrapFunction<FunctionType>(GEODE_WINDOWS(0x142aa0) GEODE_ARM_MAC(0x470ee8) GEODE_INTEL_MAC(0x51a7c0) GEODE_IOS(0x879d0));
+    return reinterpret_cast<FunctionType>(func)(a, b);
+}
+
+int scoreCompareDemons(const void* a, const void* b) {
+    using FunctionType = int(*)(const void*, const void*);
+    static auto func = wrapFunction<FunctionType>(GEODE_WINDOWS(0x142ad0) GEODE_ARM_MAC(0x470f0c) GEODE_INTEL_MAC(0x51a7f0) GEODE_IOS(0x879f4));
+    return reinterpret_cast<FunctionType>(func)(a, b);
+}
+
+int scoreCompareUserCoins(const void* a, const void* b) {
+    using FunctionType = int(*)(const void*, const void*);
+    static auto func = wrapFunction<FunctionType>(GEODE_WINDOWS(0x142b00) GEODE_ARM_MAC(0x470f30) GEODE_INTEL_MAC(0x51a820) GEODE_IOS(0x87a18));
     return reinterpret_cast<FunctionType>(func)(a, b);
 }
 #endif
 
 class $modify(UDAGameLevelManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAGameLevelManager, GameLevelManager>>& self) {
-        enabled = argon::getBaseServerUrl().rfind("://www.boomlings.com/database") != std::string::npos;
+        enabled = jasmine::gdps::getURL().rfind("://www.boomlings.com/database") != std::string::npos;
         if (!enabled) log::error("GDPS detected, User Data API disabled");
 
         for (auto& [name, hook] : self.m_hooks) {
@@ -209,7 +224,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         storeCommentsResult(comments, pageInfo, tag.c_str());
         if (m_levelCommentDelegate) m_levelCommentDelegate->loadCommentsFinished(comments, tag.c_str());
 
-        fetchData<user_data::CommentFilter>(comments);
+        fetchData<user_data::CommentEvent>(comments);
     }
 
     void onGetUserListCompleted(gd::string response, gd::string tag) {
@@ -246,7 +261,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         m_storedLevels->setObject(scores, tag);
         if (m_userListDelegate) m_userListDelegate->getUserListFinished(scores, type);
 
-        fetchData<user_data::FriendFilter>(scores);
+        fetchData<user_data::FriendEvent>(scores);
     }
 
     void onGetFriendRequestsCompleted(gd::string response, gd::string tag) {
@@ -291,11 +306,19 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         storeCommentsResult(scores, pageInfo, tag.c_str());
         if (m_friendRequestDelegate) m_friendRequestDelegate->loadFRequestsFinished(scores, tag.c_str());
 
-        fetchData<user_data::FriendRequestFilter>(scores);
+        fetchData<user_data::FriendRequestEvent>(scores);
     }
 
     void onGetLeaderboardScoresCompleted(gd::string response, gd::string tag) {
         removeDLFromActive(tag.c_str());
+
+        auto type = LeaderboardType::Default;
+        auto stat = LeaderboardStat::Stars;
+        auto split = string::split(tag, "_");
+        if (split.size() == 3) {
+            type = (LeaderboardType)atoi(split[1].c_str());
+            stat = (LeaderboardStat)atoi(split[2].c_str());
+        }
 
         if (response == "-1") {
             if (m_leaderboardManagerDelegate) m_leaderboardManagerDelegate->loadLeaderboardFailed(tag.c_str());
@@ -305,11 +328,25 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         auto scores = createAndGetScores(response, tag == "leaderboard_creator" ? GJScoreType::Creator : GJScoreType::Top);
         for (auto score : CCArrayExt<GJUserScore*>(scores)) {
             score->setUserObject("downloading"_spr, CCBool::create(true));
+            if (stat != LeaderboardStat::Stars) score->m_leaderboardStat = stat;
         }
 
-        if (tag == "leaderboard_friends") {
+        if (type == LeaderboardType::Friends) {
             auto scoresData = scores->data;
-            qsort(scoresData->arr, scoresData->num, sizeof(GJUserScore*), scoreCompare);
+            switch (stat) {
+                case LeaderboardStat::Moons:
+                    qsort(scoresData->arr, scoresData->num, sizeof(GJUserScore*), scoreCompareMoons);
+                    break;
+                case LeaderboardStat::Demons:
+                    qsort(scoresData->arr, scoresData->num, sizeof(GJUserScore*), scoreCompareDemons);
+                    break;
+                case LeaderboardStat::UserCoins:
+                    qsort(scoresData->arr, scoresData->num, sizeof(GJUserScore*), scoreCompareUserCoins);
+                    break;
+                default:
+                    qsort(scoresData->arr, scoresData->num, sizeof(GJUserScore*), scoreCompare);
+                    break;
+            }
             auto rank = 1;
             for (auto score : CCArrayExt<GJUserScore*>(scores)) {
                 score->m_playerRank = rank++;
@@ -319,23 +356,33 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         storeSearchResult(scores, " ", tag.c_str());
         if (m_leaderboardManagerDelegate) m_leaderboardManagerDelegate->loadLeaderboardFinished(scores, tag.c_str());
 
-        fetchData<user_data::GlobalScoreFilter>(scores);
+        fetchData<user_data::GlobalScoreEvent>(scores);
     }
 
-    #ifdef GEODE_IS_WINDOWS
-    #define onGetLevelLeaderboardCompleted handleIt
-    #endif
-
-    void onGetLevelLeaderboardCompleted(GEODE_WINDOWS(bool success,) gd::string response, gd::string tag GEODE_WINDOWS(, GJHttpType type)) {
-        #ifdef GEODE_IS_WINDOWS
-        if (type != GJHttpType::GetLevelLeaderboard) return GameLevelManager::handleIt(success, response, tag, type);
-
-        if (!success) response = "-1";
-        #endif
-
+    void onGetLevelLeaderboardCompleted(gd::string response, gd::string tag) {
         removeDLFromActive(tag.c_str());
 
-        if (response == "-1") {
+        auto type = LevelLeaderboardType::Friends;
+        auto mode = LevelLeaderboardMode::Time;
+        if (!tag.empty()) {
+            auto split = string::split(tag, "_");
+            if (split.size() == 4) {
+                type = (LevelLeaderboardType)atoi(split[2].c_str());
+                mode = (LevelLeaderboardMode)atoi(split[3].c_str());
+            }
+        }
+
+        auto responseNum = atoi(response.c_str());
+        if (type == LevelLeaderboardType::Local) {
+            auto level = static_cast<GJGameLevel*>(m_localLeaderboardLevels->objectForKey(tag));
+            if (level && responseNum >= 0) {
+                if (mode == LevelLeaderboardMode::Time) level->m_savedTime = false;
+                else if (mode == LevelLeaderboardMode::Points) level->m_savedPoints = false;
+            }
+            m_localLeaderboardLevels->removeObjectForKey(tag);
+            return;
+        }
+        else if (responseNum < 0) {
             if (m_leaderboardManagerDelegate) m_leaderboardManagerDelegate->loadLeaderboardFailed(tag.c_str());
             return;
         }
@@ -348,12 +395,8 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         storeSearchResult(scores, " ", tag.c_str());
         if (m_leaderboardManagerDelegate) m_leaderboardManagerDelegate->loadLeaderboardFinished(scores, tag.c_str());
 
-        fetchData<user_data::LevelScoreFilter>(scores);
+        fetchData<user_data::LevelScoreEvent>(scores);
     }
-
-    #ifdef GEODE_IS_WINDOWS
-    #undef onGetLevelLeaderboardCompleted
-    #endif
 
     void onGetGJUserInfoCompleted(gd::string response, gd::string tag) {
         removeDLFromActive(tag.c_str());
@@ -382,7 +425,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
         if (m_userInfoDelegate) m_userInfoDelegate->getUserInfoFinished(score);
 
-        fetchData<user_data::ProfileFilter>(score);
+        fetchData<user_data::ProfileEvent>(score);
     }
 
     void onGetAccountCommentsCompleted(gd::string response, gd::string tag) {
@@ -410,7 +453,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         storeCommentsResult(comments, pageInfo, tag.c_str());
         if (m_levelCommentDelegate) m_levelCommentDelegate->loadCommentsFinished(comments, tag.c_str());
 
-        fetchData<user_data::ProfileCommentFilter>(comments);
+        fetchData<user_data::ProfileCommentEvent>(comments);
     }
 
     void onGetUsersCompleted(gd::string response, gd::string tag) {
@@ -438,6 +481,6 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         storeSearchResult(scores, pageInfo, tag.c_str());
         if (m_levelManagerDelegate) m_levelManagerDelegate->loadLevelsFinished(scores, tag.c_str());
 
-        fetchData<user_data::SearchResultFilter>(scores);
+        fetchData<user_data::SearchResultEvent>(scores);
     }
 };

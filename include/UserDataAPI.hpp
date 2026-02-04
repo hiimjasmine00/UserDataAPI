@@ -1,7 +1,7 @@
 #pragma once
 #include <cocos2d.h>
 #include <fmt/format.h>
-#ifdef USER_DATA_API_EVENTS
+#if defined(USER_DATA_API_EVENTS) || defined(GEODE_DEFINE_EVENT_EXPORTS)
 #include <Geode/loader/Dispatch.hpp>
 #endif
 #include <matjson.hpp>
@@ -32,14 +32,14 @@ namespace user_data {
     /// @param id The ID to check for (default is your mod ID)
     /// @returns True if the node contains user data for the specified ID, false otherwise.
     inline bool contains(cocos2d::CCNode* node, std::string_view id = GEODE_MOD_ID) {
-        return node && node->getUserObject(fmt::format("{}/{}", ID, id)) != nullptr;
+        return node && node->getUserObject(fmt::format("hiimjasmine00.user_data_api/{}", id)) != nullptr;
     }
 
     /// Returns whether the given node is currently downloading user data.
     /// @param node The node to check
     /// @returns True if the node is currently downloading user data, false otherwise.
     inline bool downloading(cocos2d::CCNode* node) {
-        return node && node->getUserObject(fmt::format("{}/downloading", ID)) != nullptr;
+        return node && node->getUserObject("hiimjasmine00.user_data_api/downloading") != nullptr;
     }
 
     /// Retrieves user data from the given node for the specified ID and converts it to the specified type. (Defaults to matjson::Value)
@@ -50,7 +50,7 @@ namespace user_data {
     inline geode::Result<T> get(cocos2d::CCNode* node, std::string_view id = GEODE_MOD_ID) {
         if (!node) return geode::Err("Node is null");
 
-        if (auto obj = static_cast<cocos2d::CCString*>(node->getUserObject(fmt::format("{}/{}", ID, id)))) {
+        if (auto obj = static_cast<cocos2d::CCString*>(node->getUserObject(fmt::format("hiimjasmine00.user_data_api/{}", id)))) {
             return matjson::parseAs<T>(obj->m_sString);
         }
         else {
@@ -58,14 +58,22 @@ namespace user_data {
         }
     }
 
+    #if defined(USER_DATA_API_EVENTS)
     /// Uploads user data to the User Data API.
     /// @param data The user data to upload as a matjson::Value
     /// @param id The ID to upload data for (Defaults to your mod ID)
-    void USER_DATA_API_DLL upload(const matjson::Value& data, std::string_view id = GEODE_MOD_ID);
-};
-
-#ifdef USER_DATA_API_EVENTS
-inline void user_data::upload(const matjson::Value& data, std::string_view id) {
-    geode::DispatchEvent<matjson::Value, std::string>(fmt::format("{}/v1/upload", ID), data, std::string(id)).post();
+    inline void upload(matjson::Value data, std::string id = GEODE_MOD_ID)
+        GEODE_EVENT_EXPORT_CALL_NORES(&user_data::upload, (std::move(data), std::move(id)), "hiimjasmine00.user_data_api/user_data::upload")
+    #elif defined(GEODE_DEFINE_EVENT_EXPORTS)
+    /// Uploads user data to the User Data API.
+    /// @param data The user data to upload as a matjson::Value
+    /// @param id The ID to upload data for (Defaults to your mod ID)
+    void USER_DATA_API_DLL upload(matjson::Value data, std::string id = GEODE_MOD_ID)
+        GEODE_EVENT_EXPORT_DEFINE(&user_data::upload, (std::move(data), std::move(id)), "hiimjasmine00.user_data_api/user_data::upload")
+    #else
+    /// Uploads user data to the User Data API.
+    /// @param data The user data to upload as a matjson::Value
+    /// @param id The ID to upload data for (Defaults to your mod ID)
+    void USER_DATA_API_DLL upload(matjson::Value data, std::string id = GEODE_MOD_ID);
+    #endif
 }
-#endif
