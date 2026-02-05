@@ -49,7 +49,7 @@ void user_data::upload(matjson::Value data, std::string id) {
                     .header("Authorization", std::move(res).unwrap())
                     .post(fmt::format("https://userdataapi.dankmeme.dev/v1/upload?id={}&mod={}", GJAccountManager::get()->m_accountID, id)),
                 [](web::WebResponse res) {
-                    if (!res.ok()) log::error("Failed to upload user data: {}", jasmine::web::getString(&res));
+                    if (!res.ok()) log::error("Failed to upload user data: {}", jasmine::web::getString(res));
                 }
             );
         }
@@ -101,7 +101,7 @@ void fetchData(CCObject* object) {
     }
 
     async::spawn(web::WebRequest().get(std::move(url)), [objectRef = WeakRef(object)](web::WebResponse res) {
-        if (!res.ok()) return log::error("Failed to get profile data: {}", jasmine::web::getString(&res));
+        if (!res.ok()) return log::error("Failed to get profile data: {}", jasmine::web::getString(res));
 
         auto json = res.json();
         if (json.isErr()) return log::error("Failed to parse profile data: {}", json.unwrapErr());

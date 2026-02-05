@@ -29,8 +29,8 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
-CPMAddPackage("gh:hiimjasmine00/argon#8a06b63")
-CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.3.2")
+CPMAddPackage("gh:GlobedGD/argon#489ce80")
+CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.4.0")
 target_link_libraries(${PROJECT_NAME} argon jasmine-tools)
 
 setup_geode_mod(${PROJECT_NAME})
