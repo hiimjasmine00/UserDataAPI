@@ -61,10 +61,10 @@ void user_data::upload(matjson::Value data, std::string id) {
 
 template <class U, class T>
 void applyData(T* node, int id, const std::unordered_map<int, matjson::Value>& dataValues) {
-    node->setUserObject("downloading"_spr, nullptr);
+    node->setUserFlag("downloading"_spr, false);
     if (auto it = dataValues.find(id); it != dataValues.end()) {
         for (auto& [k, v] : it->second) {
-            node->setUserObject(fmt::format("{}"_spr, k), CCString::create(v.dump(0)));
+            node->setUserObject(fmt::format("{}"_spr, k), ObjWrapper<matjson::Value>::create(v));
         }
         U(id).send(node);
     }
@@ -101,6 +101,9 @@ void fetchData(CCObject* object) {
     }
 
     spawn(web::WebRequest().get(std::move(url)), [objectRef = WeakRef(object)](web::WebResponse res) {
+        auto object = objectRef.lock().data();
+        if (!object) return;
+
         if (!res.ok()) return log::error("Failed to get profile data: {}", jasmine::web::getString(res));
 
         auto json = res.json();
@@ -111,12 +114,12 @@ void fetchData(CCObject* object) {
 
         if (data.size() == 0) return;
 
-        auto object = objectRef.lock().data();
-        if (!object) return;
-
         std::unordered_map<int, matjson::Value> dataValues;
         for (auto& [k, v] : data) {
-            if (auto id = jasmine::convert::get<int>(k)) dataValues[id.value()] = v;
+            if (!v.isObject()) continue;
+            if (auto id = jasmine::convert::get<int>(k)) {
+                dataValues.emplace(id.value(), std::move(v));
+            }
         }
 
         if constexpr (std::is_same_v<U, user_data::ProfileEvent>) {
@@ -217,7 +220,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         auto comments = createAndGetLevelComments(split[0], levelIDFromCommentKey(tag.c_str()));
         for (auto comment : CCArrayExt<GJComment*>(comments)) {
             if (auto score = comment->m_userScore) {
-                comment->setUserObject("downloading"_spr, CCBool::create(true));
+                comment->setUserFlag("downloading"_spr, true);
             }
         }
 
@@ -247,7 +250,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
             auto score = GJUserScore::create(responseToDict(result, false));
             score->m_friendReqStatus = status;
             if (score->m_accountID > 0 && score->m_userID > 0) {
-                score->setUserObject("downloading"_spr, CCBool::create(true));
+                score->setUserFlag("downloading"_spr, true);
                 scores->addObject(score);
                 storeUserName(score->m_userID, score->m_accountID, score->m_userName);
             }
@@ -295,7 +298,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
                     score->m_friendReqStatus = status;
                     request->m_isRead = !score->m_newFriendRequest;
                     request->m_accountID = score->m_accountID;
-                    score->setUserObject("downloading"_spr, CCBool::create(true));
+                    score->setUserFlag("downloading"_spr, true);
                     scores->addObject(score);
                     storeFriendRequest(request);
                     storeUserName(score->m_userID, score->m_accountID, score->m_userName);
@@ -327,7 +330,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
         auto scores = createAndGetScores(response, tag == "leaderboard_creator" ? GJScoreType::Creator : GJScoreType::Top);
         for (auto score : CCArrayExt<GJUserScore*>(scores)) {
-            score->setUserObject("downloading"_spr, CCBool::create(true));
+            score->setUserFlag("downloading"_spr, true);
             if (stat != LeaderboardStat::Stars) score->m_leaderboardStat = stat;
         }
 
@@ -389,7 +392,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
         auto scores = createAndGetScores(response, GJScoreType::LevelScore);
         for (auto score : CCArrayExt<GJUserScore*>(scores)) {
-            score->setUserObject("downloading"_spr, CCBool::create(true));
+            score->setUserFlag("downloading"_spr, true);
         }
 
         storeSearchResult(scores, " ", tag.c_str());
@@ -414,7 +417,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
             return;
         }
 
-        score->setUserObject("downloading"_spr, CCBool::create(true));
+        score->setUserFlag("downloading"_spr, true);
 
         storeUserInfo(score);
         if (score->m_friendReqStatus == 3) {
@@ -447,7 +450,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
         auto comments = createAndGetAccountComments(split[0], levelIDFromCommentKey(tag.c_str()));
         for (auto comment : CCArrayExt<GJComment*>(comments)) {
-            comment->setUserObject("downloading"_spr, CCBool::create(true));
+            comment->setUserFlag("downloading"_spr, true);
         }
 
         storeCommentsResult(comments, pageInfo, tag.c_str());
@@ -475,7 +478,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
 
         auto scores = createAndGetScores(split[0], GJScoreType::Search);
         for (auto score : CCArrayExt<GJUserScore*>(scores)) {
-            score->setUserObject("downloading"_spr, CCBool::create(true));
+            score->setUserFlag("downloading"_spr, true);
         }
 
         storeSearchResult(scores, pageInfo, tag.c_str());

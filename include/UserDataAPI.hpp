@@ -39,7 +39,7 @@ namespace user_data {
     /// @param node The node to check
     /// @returns True if the node is currently downloading user data, false otherwise.
     inline bool downloading(cocos2d::CCNode* node) {
-        return node && node->getUserObject("hiimjasmine00.user_data_api/downloading") != nullptr;
+        return node && node->getUserFlag("hiimjasmine00.user_data_api/downloading");
     }
 
     /// Retrieves user data from the given node for the specified ID and converts it to the specified type. (Defaults to matjson::Value)
@@ -50,8 +50,9 @@ namespace user_data {
     inline geode::Result<T> get(cocos2d::CCNode* node, std::string_view id = GEODE_MOD_ID) {
         if (!node) return geode::Err("Node is null");
 
-        if (auto obj = static_cast<cocos2d::CCString*>(node->getUserObject(fmt::format("hiimjasmine00.user_data_api/{}", id)))) {
-            return matjson::parseAs<T>(obj->m_sString);
+        // No, I'm not including <Geode/utils/cocos.hpp> just for ObjWrapper
+        if (auto obj = node->getUserObject(fmt::format("hiimjasmine00.user_data_api/{}", id))) {
+            return reinterpret_cast<matjson::Value*>(reinterpret_cast<uintptr_t>(obj) + sizeof(cocos2d::CCObject))->as<T>();
         }
         else {
             return geode::Err("User object not found");

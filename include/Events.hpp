@@ -32,7 +32,7 @@ namespace user_data {
         auto score = comment->m_userScore;
         if (!accountComment && !score) return;
 
-        if (comment->getUserObject("hiimjasmine00.user_data_api/downloading")) {
+        if (comment->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
             if (accountComment) cell->addEventListener(ProfileCommentEvent(comment->m_accountID), std::forward<F>(fn));
             else if (score) cell->addEventListener(CommentEvent(score->m_accountID), std::forward<F>(fn));
         }
@@ -50,7 +50,7 @@ namespace user_data {
         auto score = cell->m_userScore;
         if (!score) return;
 
-        if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
+        if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
             cell->addEventListener(LevelScoreEvent(score->m_accountID), std::forward<F>(fn));
         }
         else fn(score);
@@ -67,7 +67,7 @@ namespace user_data {
         auto score = page->m_score;
         if (!score) return;
 
-        if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
+        if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
             score->addEventListener(ProfileEvent(score->m_accountID), std::forward<F>(fn));
         }
         else fn(score);
@@ -84,7 +84,7 @@ namespace user_data {
         auto score = cell->m_score;
         if (!score) return;
 
-        if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
+        if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
             cell->addEventListener(FriendRequestEvent(score->m_accountID), std::forward<F>(fn));
         }
         else fn(score);
@@ -101,7 +101,7 @@ namespace user_data {
         auto score = cell->m_score;
         if (!score) return;
 
-        if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
+        if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
             if (score->m_scoreType == 2) cell->addEventListener(SearchResultEvent(score->m_accountID), std::forward<F>(fn));
             else cell->addEventListener(GlobalScoreEvent(score->m_accountID), std::forward<F>(fn));
         }
@@ -119,7 +119,7 @@ namespace user_data {
         auto score = cell->m_userScore;
         if (!score) return;
 
-        if (score->getUserObject("hiimjasmine00.user_data_api/downloading")) {
+        if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
             switch (score->m_friendReqStatus) {
                 case 1: case 2:
                     cell->addEventListener(FriendEvent(score->m_accountID), std::forward<F>(fn));

@@ -1,5 +1,5 @@
 # User Data API Changelog
-## v2.0.0 (2026-02-04)
+## v2.0.0 (2026-02-06)
 - Ported to Geometry Dash v2.208 / Geode SDK v5.0.0
 - Removed constant references from user_data::upload parameters
 
