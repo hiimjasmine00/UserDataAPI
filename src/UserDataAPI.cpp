@@ -328,7 +328,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
             return;
         }
 
-        auto scores = createAndGetScores(response, tag == "leaderboard_creator" ? GJScoreType::Creator : GJScoreType::Top);
+        auto scores = createAndGetScores(response, type == LeaderboardType::Creator ? GJScoreType::Creator : GJScoreType::Top);
         for (auto score : CCArrayExt<GJUserScore*>(scores)) {
             score->setUserFlag("downloading"_spr, true);
             if (stat != LeaderboardStat::Stars) score->m_leaderboardStat = stat;
