@@ -30,7 +30,7 @@ $on_mod(Loaded) {
 
 $on_game(ModsLoaded) {
     for (auto mod : Loader::get()->getAllMods()) {
-        if (mod->isEnabled() && std::ranges::contains(mod->getMetadata().getDependencies(), GEODE_MOD_ID, &ModMetadata::Dependency::getID)) {
+        if (mod->isLoaded() && std::ranges::contains(mod->getMetadata().getDependencies(), GEODE_MOD_ID, &ModMetadata::Dependency::getID)) {
             auto modID = mod->getID();
             if (modID == "camila314.comment-colors") modID = "camila314.comment-color";
             mods.push_back(modID);
