@@ -17,12 +17,6 @@
             "include/events/*.hpp"
         ]
     },
-    "incompatibilities": {
-        "hiimjasmine00.player_data_api": {
-            "importance": "superseded",
-            "version": ">=v1.0.0"
-        }
-    },
     "links": {
         "community": "https://discord.gg/QVKmbvBXA7",
         "source": "https://github.com/hiimjasmine00/UserDataAPI",
