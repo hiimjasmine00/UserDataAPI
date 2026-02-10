@@ -11,7 +11,6 @@
 #include <Geode/binding/UserListDelegate.hpp>
 #include <Geode/loader/GameEvent.hpp>
 #include <Geode/modify/GameLevelManager.hpp>
-#include <jasmine/convert.hpp>
 #include <jasmine/gdps.hpp>
 #include <jasmine/web.hpp>
 #define GEODE_DEFINE_EVENT_EXPORTS
@@ -117,8 +116,8 @@ void fetchData(CCObject* object) {
         std::unordered_map<int, matjson::Value> dataValues;
         for (auto& [k, v] : data) {
             if (!v.isObject()) continue;
-            if (auto id = jasmine::convert::get<int>(k)) {
-                dataValues.emplace(id.value(), std::move(v));
+            if (auto id = numFromString<int>(k)) {
+                dataValues.emplace(id.unwrap(), std::move(v));
             }
         }
 
@@ -191,7 +190,7 @@ int scoreCompareUserCoins(const void* a, const void* b) {
 
 class $modify(UDAGameLevelManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAGameLevelManager, GameLevelManager>>& self) {
-        enabled = jasmine::gdps::isActive();
+        enabled = !jasmine::gdps::isActive();
         if (!enabled) log::error("GDPS detected, User Data API disabled");
 
         for (auto& [name, hook] : self.m_hooks) {
