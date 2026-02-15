@@ -4,7 +4,7 @@
 
 namespace user_data {
     /// Represents an event for a friend or blocked user.
-    class FriendEvent : public geode::GlobalEvent<FriendEvent, void(GJUserScore*), void(GJUserScore*), int> {
+    class FriendEvent : public geode::GlobalEvent<FriendEvent, void(GJUserScore*), int> {
     public:
         using ObjectType = GJUserScore*;
         using GlobalEvent::GlobalEvent;

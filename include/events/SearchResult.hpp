@@ -4,7 +4,7 @@
 
 namespace user_data {
     /// Represents an event for a user search result.
-    class SearchResultEvent : public geode::GlobalEvent<SearchResultEvent, void(GJUserScore*), void(GJUserScore*), int> {
+    class SearchResultEvent : public geode::GlobalEvent<SearchResultEvent, void(GJUserScore*), int> {
     public:
         using ObjectType = GJUserScore*;
         using GlobalEvent::GlobalEvent;

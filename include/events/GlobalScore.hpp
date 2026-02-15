@@ -4,7 +4,7 @@
 
 namespace user_data {
     /// Represents an event for a global leaderboard score.
-    class GlobalScoreEvent : public geode::GlobalEvent<GlobalScoreEvent, void(GJUserScore*), void(GJUserScore*), int> {
+    class GlobalScoreEvent : public geode::GlobalEvent<GlobalScoreEvent, void(GJUserScore*), int> {
     public:
         using ObjectType = GJUserScore*;
         using GlobalEvent::GlobalEvent;

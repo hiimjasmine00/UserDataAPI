@@ -4,7 +4,7 @@
 
 namespace user_data {
     /// Represents an event for a user profile.
-    class ProfileEvent : public geode::GlobalEvent<ProfileEvent, void(GJUserScore*), void(GJUserScore*), int> {
+    class ProfileEvent : public geode::GlobalEvent<ProfileEvent, void(GJUserScore*), int> {
     public:
         using ObjectType = GJUserScore*;
         using GlobalEvent::GlobalEvent;

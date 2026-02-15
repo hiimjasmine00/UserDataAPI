@@ -4,7 +4,7 @@
 
 namespace user_data {
     /// Represents an event for a level or list comment.
-    class CommentEvent : public geode::GlobalEvent<CommentEvent, void(GJComment*), void(GJComment*), int> {
+    class CommentEvent : public geode::GlobalEvent<CommentEvent, void(GJComment*), int> {
     public:
         using ObjectType = GJComment*;
         using GlobalEvent::GlobalEvent;
