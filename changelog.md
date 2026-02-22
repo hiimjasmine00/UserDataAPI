@@ -1,4 +1,7 @@
 # User Data API Changelog
+## v2.0.1 (2026-02-22)
+- Fixed GDPS validation on Android
+
 ## v2.0.0 (2026-02-14)
 - Ported to Geometry Dash v2.208 / Geode SDK v5.0.0
 - Removed constant references from user_data::upload parameters
