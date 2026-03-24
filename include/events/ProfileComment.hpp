@@ -4,7 +4,7 @@
 
 namespace user_data {
     /// Represents an event for a profile comment.
-    class ProfileCommentEvent : public geode::GlobalEvent<ProfileCommentEvent, void(GJComment*), int> {
+    class ProfileCommentEvent : public geode::GlobalEvent<ProfileCommentEvent, bool(GJComment*), bool(GJComment*), int> {
     public:
         using ObjectType = GJComment*;
         using GlobalEvent::GlobalEvent;

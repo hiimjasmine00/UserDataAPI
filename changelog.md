@@ -1,4 +1,7 @@
 # User Data API Changelog
+## v2.0.2 (2026-03-24)
+- Fixed event callback types
+
 ## v2.0.1 (2026-02-22)
 - Fixed GDPS validation on Android
 

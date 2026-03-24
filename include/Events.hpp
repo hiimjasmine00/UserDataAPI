@@ -21,8 +21,7 @@ namespace user_data {
     /// If the data has already been downloaded, the function is run immediately.
     /// @param cell The CommentCell to handle
     /// @param fn The function to run on the CommentCell's comment
-    template <typename F> requires (std::is_invocable_r_v<void, F, GJComment*>)
-    inline void handleCommentCell(CommentCell* cell, F&& fn) {
+    inline void handleCommentCell(CommentCell* cell, geode::CopyableFunction<void(GJComment*)> fn) {
         if (!cell) return;
 
         auto comment = cell->m_comment;
@@ -33,8 +32,8 @@ namespace user_data {
         if (!accountComment && !score) return;
 
         if (comment->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
-            if (accountComment) cell->addEventListener(ProfileCommentEvent(comment->m_accountID), std::forward<F>(fn));
-            else if (score) cell->addEventListener(CommentEvent(score->m_accountID), std::forward<F>(fn));
+            if (accountComment) cell->addEventListener(ProfileCommentEvent(comment->m_accountID), std::move(fn));
+            else if (score) cell->addEventListener(CommentEvent(score->m_accountID), std::move(fn));
         }
         else fn(comment);
     }
@@ -43,15 +42,14 @@ namespace user_data {
     /// If the data has already been downloaded, the function is run immediately.
     /// @param cell The GJLevelScoreCell to handle
     /// @param fn The function to run on the GJLevelScoreCell's score
-    template <typename F> requires (std::is_invocable_r_v<void, F, GJUserScore*>)
-    inline void handleLevelScoreCell(GJLevelScoreCell* cell, F&& fn) {
+    inline void handleLevelScoreCell(GJLevelScoreCell* cell, geode::CopyableFunction<void(GJUserScore*)> fn) {
         if (!cell) return;
 
         auto score = cell->m_userScore;
         if (!score) return;
 
         if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
-            cell->addEventListener(LevelScoreEvent(score->m_accountID), std::forward<F>(fn));
+            cell->addEventListener(LevelScoreEvent(score->m_accountID), std::move(fn));
         }
         else fn(score);
     }
@@ -60,15 +58,14 @@ namespace user_data {
     /// If the data has already been downloaded, the function is run immediately.
     /// @param page The ProfilePage to handle
     /// @param fn The function to run on the ProfilePage's score
-    template <typename F> requires (std::is_invocable_r_v<void, F, GJUserScore*>)
-    inline void handleProfilePage(ProfilePage* page, F&& fn) {
+    inline void handleProfilePage(ProfilePage* page, geode::CopyableFunction<void(GJUserScore*)> fn) {
         if (!page) return;
 
         auto score = page->m_score;
         if (!score) return;
 
         if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
-            score->addEventListener(ProfileEvent(score->m_accountID), std::forward<F>(fn));
+            score->addEventListener(ProfileEvent(score->m_accountID), std::move(fn));
         }
         else fn(score);
     }
@@ -77,15 +74,14 @@ namespace user_data {
     /// If the data has already been downloaded, the function is run immediately.
     /// @param cell The GJRequestCell to handle
     /// @param fn The function to run on the GJRequestCell's score
-    template <typename F> requires (std::is_invocable_r_v<void, F, GJUserScore*>)
-    inline void handleRequestCell(GJRequestCell* cell, F&& fn) {
+    inline void handleRequestCell(GJRequestCell* cell, geode::CopyableFunction<void(GJUserScore*)> fn) {
         if (!cell) return;
 
         auto score = cell->m_score;
         if (!score) return;
 
         if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
-            cell->addEventListener(FriendRequestEvent(score->m_accountID), std::forward<F>(fn));
+            cell->addEventListener(FriendRequestEvent(score->m_accountID), std::move(fn));
         }
         else fn(score);
     }
@@ -94,16 +90,15 @@ namespace user_data {
     /// If the data has already been downloaded, the function is run immediately.
     /// @param cell The GJScoreCell to handle
     /// @param fn The function to run on the GJScoreCell's score
-    template <typename F> requires (std::is_invocable_r_v<void, F, GJUserScore*>)
-    inline void handleScoreCell(GJScoreCell* cell, F&& fn) {
+    inline void handleScoreCell(GJScoreCell* cell, geode::CopyableFunction<void(GJUserScore*)> fn) {
         if (!cell) return;
 
         auto score = cell->m_score;
         if (!score) return;
 
         if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
-            if (score->m_scoreType == 2) cell->addEventListener(SearchResultEvent(score->m_accountID), std::forward<F>(fn));
-            else cell->addEventListener(GlobalScoreEvent(score->m_accountID), std::forward<F>(fn));
+            if (score->m_scoreType == 2) cell->addEventListener(SearchResultEvent(score->m_accountID), std::move(fn));
+            else cell->addEventListener(GlobalScoreEvent(score->m_accountID), std::move(fn));
         }
         else fn(score);
     }
@@ -112,8 +107,7 @@ namespace user_data {
     /// If the data has already been downloaded, the function is run immediately.
     /// @param cell The GJUserCell to handle
     /// @param fn The function to run on the GJUserCell's score
-    template <typename F> requires (std::is_invocable_r_v<void, F, GJUserScore*>)
-    inline void handleUserCell(GJUserCell* cell, F&& fn) {
+    inline void handleUserCell(GJUserCell* cell, geode::CopyableFunction<void(GJUserScore*)> fn) {
         if (!cell) return;
 
         auto score = cell->m_userScore;
@@ -122,10 +116,10 @@ namespace user_data {
         if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
             switch (score->m_friendReqStatus) {
                 case 1: case 2:
-                    cell->addEventListener(FriendEvent(score->m_accountID), std::forward<F>(fn));
+                    cell->addEventListener(FriendEvent(score->m_accountID), std::move(fn));
                     break;
                 case 4:
-                    cell->addEventListener(FriendRequestEvent(score->m_accountID), std::forward<F>(fn));
+                    cell->addEventListener(FriendRequestEvent(score->m_accountID), std::move(fn));
                     break;
             }
         }
