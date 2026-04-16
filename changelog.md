@@ -1,4 +1,7 @@
 # User Data API Changelog
+## v2.0.4 (2026-04-16)
+- Updated Argon to v1.4.9
+
 ## v2.0.3 (2026-03-29)
 - Updated Argon to v1.4.6
 

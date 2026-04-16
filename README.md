@@ -12,7 +12,7 @@ To use User Data API, include it as a [dependency](https://docs.geode-sdk.org/mo
 {
     "dependencies": {
         "hiimjasmine00.user_data_api": {
-            "version": ">=v1.2.0",
+            "version": ">=v2.0.0",
             "required": true
         }
     }
