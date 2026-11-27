@@ -1,4 +1,7 @@
 # User Data API Changelog
+## v3.0.0 (2026-11-26)
+- Ported to Geometry Dash v2.209 / Geode SDK v6.0.0
+
 ## v2.0.4 (2026-04-16)
 - Updated Argon to v1.4.9
 

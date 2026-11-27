@@ -1,4 +1,5 @@
-#include <argon/argon.hpp>
+#include <Geode/loader/Mod.hpp>
+#include <dankmeme.argon/argon.hpp>
 #include <Events.hpp>
 #include <Geode/binding/FriendRequestDelegate.hpp>
 #include <Geode/binding/GJAccountManager.hpp>
@@ -7,9 +8,11 @@
 #include <Geode/binding/LeaderboardManagerDelegate.hpp>
 #include <Geode/binding/LevelCommentDelegate.hpp>
 #include <Geode/binding/LevelManagerDelegate.hpp>
+#include <Geode/binding/Standalones.hpp>
 #include <Geode/binding/UserInfoDelegate.hpp>
 #include <Geode/binding/UserListDelegate.hpp>
 #include <Geode/loader/GameEvent.hpp>
+#include <Geode/loader/ModEvent.hpp>
 #include <Geode/modify/GameLevelManager.hpp>
 #include <jasmine/gdps.hpp>
 #include <jasmine/web.hpp>
@@ -145,49 +148,6 @@ void fetchData(CCObject* object) {
     });
 }
 
-#ifdef GEODE_IS_ANDROID
-int scoreCompare(const void* a, const void* b);
-int scoreCompareMoons(const void* a, const void* b);
-int scoreCompareDemons(const void* a, const void* b);
-int scoreCompareUserCoins(const void* a, const void* b);
-#else
-template <class F>
-void* wrapFunction(uintptr_t address) {
-    auto wrapped = hook::createWrapper(reinterpret_cast<void*>(base::get() + address), {
-		.m_convention = hook::createConvention(tulip::hook::TulipConvention::Default),
-		.m_abstract = tulip::hook::AbstractFunction::from(F(nullptr)),
-	});
-    if (wrapped.isErr()) {
-        throw std::runtime_error(wrapped.unwrapErr());
-    }
-    return wrapped.unwrap();
-}
-
-int scoreCompare(const void* a, const void* b) {
-    using FunctionType = int(*)(const void*, const void*);
-    static auto func = wrapFunction<FunctionType>(GEODE_WINDOWS(0x142a00) GEODE_ARM_MAC(0x470e64) GEODE_INTEL_MAC(0x51a730) GEODE_IOS(0x8794c));
-    return reinterpret_cast<FunctionType>(func)(a, b);
-}
-
-int scoreCompareMoons(const void* a, const void* b) {
-    using FunctionType = int(*)(const void*, const void*);
-    static auto func = wrapFunction<FunctionType>(GEODE_WINDOWS(0x142aa0) GEODE_ARM_MAC(0x470ee8) GEODE_INTEL_MAC(0x51a7c0) GEODE_IOS(0x879d0));
-    return reinterpret_cast<FunctionType>(func)(a, b);
-}
-
-int scoreCompareDemons(const void* a, const void* b) {
-    using FunctionType = int(*)(const void*, const void*);
-    static auto func = wrapFunction<FunctionType>(GEODE_WINDOWS(0x142ad0) GEODE_ARM_MAC(0x470f0c) GEODE_INTEL_MAC(0x51a7f0) GEODE_IOS(0x879f4));
-    return reinterpret_cast<FunctionType>(func)(a, b);
-}
-
-int scoreCompareUserCoins(const void* a, const void* b) {
-    using FunctionType = int(*)(const void*, const void*);
-    static auto func = wrapFunction<FunctionType>(GEODE_WINDOWS(0x142b00) GEODE_ARM_MAC(0x470f30) GEODE_INTEL_MAC(0x51a820) GEODE_IOS(0x87a18));
-    return reinterpret_cast<FunctionType>(func)(a, b);
-}
-#endif
-
 class $modify(UDAGameLevelManager, GameLevelManager) {
     static void onModify(ModifyBase<ModifyDerive<UDAGameLevelManager, GameLevelManager>>& self) {
         enabled = !jasmine::gdps::isActive();
@@ -199,8 +159,14 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         }
     }
 
-    void onGetLevelCommentsCompleted(gd::string response, gd::string tag) {
+    void onGetLevelCommentsCompleted(std::string response, std::string tag) {
         removeDLFromActive(tag.c_str());
+
+        auto keyType = CommentKeyType::Level;
+        auto splitKey = string::split(tag, "_");
+        if (splitKey.size() > 4) {
+            keyType = (CommentKeyType)atoi(splitKey[4].c_str());
+        }
 
         if (response == "-1") {
             if (m_levelCommentDelegate) m_levelCommentDelegate->loadCommentsFailed(tag.c_str());
@@ -216,7 +182,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         auto& pageInfo = split[1];
         if (m_levelCommentDelegate) m_levelCommentDelegate->setupPageInfo(pageInfo, tag.c_str());
 
-        auto comments = createAndGetLevelComments(split[0], levelIDFromCommentKey(tag.c_str()));
+        auto comments = createAndGetLevelComments(split[0], levelIDFromCommentKey(tag.c_str()), CommentKeyType::Level);
         for (auto comment : CCArrayExt<GJComment*>(comments)) {
             if (auto score = comment->m_userScore) {
                 comment->setUserFlag("downloading"_spr, true);
@@ -229,44 +195,39 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         fetchData<user_data::CommentEvent>(comments);
     }
 
-    void onGetUserListCompleted(gd::string response, gd::string tag) {
-        auto type = tag == "get_friends" ? UserListType::Friends : UserListType::Blocked;
-        removeDLFromActive(tag.c_str());
+    void onGetUserSearchCompleted(std::string response, std::string tag) {
+        m_friendReqAndUserBlocks->removeObjectForKey(tag);
 
         if (response == "-1") {
-            if (m_userListDelegate) m_userListDelegate->getUserListFailed(type, GJErrorCode::GenericError);
+            if (m_userListDelegate) m_userListDelegate->getUserListFailed(UserListType::Search, GJErrorCode::GenericError);
             return;
         }
 
         if (atoi(response.c_str()) < 0) {
-            if (m_userListDelegate) m_userListDelegate->getUserListFailed(type, GJErrorCode::NotFound);
+            if (m_userListDelegate) m_userListDelegate->getUserListFailed(UserListType::Search, GJErrorCode::NotFound);
             return;
         }
 
         auto scores = CCArray::create();
-        auto status = type == UserListType::Blocked ? 2 : 1;
         for (auto& result : string::split(response, "|")) {
-            auto score = GJUserScore::create(responseToDict(result, false));
-            score->m_friendReqStatus = status;
-            if (score->m_accountID > 0 && score->m_userID > 0) {
+            auto dict = responseToDict(result, false);
+            auto score = GJUserScore::create(dict);
+            if (score && score->m_accountID > 0 && score->m_userID > 0) {
                 score->setUserFlag("downloading"_spr, true);
                 scores->addObject(score);
                 storeUserName(score->m_userID, score->m_accountID, score->m_userName);
             }
         }
 
-        if (scores->count() == 0) {
-            if (m_userListDelegate) m_userListDelegate->getUserListFailed(type, GJErrorCode::GenericError);
-            return;
+        if (m_userListDelegate) {
+            if (scores->count() == 0) m_userListDelegate->getUserListFailed(UserListType::Search, GJErrorCode::NotFound);
+            else m_userListDelegate->getUserListFinished(scores, UserListType::Search);
         }
 
-        m_storedLevels->setObject(scores, tag);
-        if (m_userListDelegate) m_userListDelegate->getUserListFinished(scores, type);
-
-        fetchData<user_data::FriendEvent>(scores);
+        fetchData<user_data::RequestResultEvent>(scores);
     }
 
-    void onGetFriendRequestsCompleted(gd::string response, gd::string tag) {
+    void onGetFriendRequestsCompleted(std::string response, std::string tag) {
         removeDLFromActive(tag.c_str());
 
         if (response == "-1") {
@@ -296,6 +257,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
                 if (auto request = GJFriendRequest::create(dict)) {
                     score->m_friendReqStatus = status;
                     request->m_isRead = !score->m_newFriendRequest;
+                    request->m_canIgnore = tag == "fReqI";
                     request->m_accountID = score->m_accountID;
                     score->setUserFlag("downloading"_spr, true);
                     scores->addObject(score);
@@ -311,7 +273,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         fetchData<user_data::FriendRequestEvent>(scores);
     }
 
-    void onGetLeaderboardScoresCompleted(gd::string response, gd::string tag) {
+    void onGetLeaderboardScoresCompleted(std::string response, std::string tag) {
         removeDLFromActive(tag.c_str());
 
         auto type = LeaderboardType::Default;
@@ -333,7 +295,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
             if (stat != LeaderboardStat::Stars) score->m_leaderboardStat = stat;
         }
 
-        if (type == LeaderboardType::Friends) {
+        if (scores->count() != 0 && type == LeaderboardType::Friends) {
             auto scoresData = scores->data;
             switch (stat) {
                 case LeaderboardStat::Moons:
@@ -361,7 +323,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         fetchData<user_data::GlobalScoreEvent>(scores);
     }
 
-    void onGetLevelLeaderboardCompleted(gd::string response, gd::string tag) {
+    void onGetLevelLeaderboardCompleted(std::string response, std::string tag) {
         removeDLFromActive(tag.c_str());
 
         auto type = LevelLeaderboardType::Friends;
@@ -400,7 +362,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         fetchData<user_data::LevelScoreEvent>(scores);
     }
 
-    void onGetGJUserInfoCompleted(gd::string response, gd::string tag) {
+    void onGetGJUserInfoCompleted(std::string response, std::string tag) {
         removeDLFromActive(tag.c_str());
 
         auto accountID = getSplitIntFromKey(tag.c_str(), 1);
@@ -419,7 +381,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         score->setUserFlag("downloading"_spr, true);
 
         storeUserInfo(score);
-        if (score->m_friendReqStatus == 3) {
+        if (score->m_friendReqStatus == 3 || (score->m_friendReqStatus == 4 && dict->objectForKey("32"))) {
             auto request = GJFriendRequest::create(dict);
             request->m_accountID = score->m_accountID;
             storeFriendRequest(request);
@@ -430,7 +392,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         fetchData<user_data::ProfileEvent>(score);
     }
 
-    void onGetAccountCommentsCompleted(gd::string response, gd::string tag) {
+    void onGetAccountCommentsCompleted(std::string response, std::string tag) {
         removeDLFromActive(tag.c_str());
 
         if (response == "-1") {
@@ -458,7 +420,7 @@ class $modify(UDAGameLevelManager, GameLevelManager) {
         fetchData<user_data::ProfileCommentEvent>(comments);
     }
 
-    void onGetUsersCompleted(gd::string response, gd::string tag) {
+    void onGetUsersCompleted(std::string response, std::string tag) {
         removeDLFromActive(tag.c_str());
 
         if (response == "-1") {

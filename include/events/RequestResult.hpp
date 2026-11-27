@@ -3,8 +3,8 @@
 #include <Geode/loader/Event.hpp>
 
 namespace user_data {
-    /// Represents an event for a friend or blocked user.
-    class FriendEvent : public geode::GlobalEvent<FriendEvent, bool(GJUserScore*), bool(GJUserScore*), int> {
+    /// Represents an event for a friend request search result.
+    class RequestResultEvent : public geode::GlobalEvent<RequestResultEvent, bool(GJUserScore*), bool(GJUserScore*), int> {
     public:
         using ObjectType = GJUserScore*;
         using GlobalEvent::GlobalEvent;

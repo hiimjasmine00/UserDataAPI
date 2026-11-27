@@ -1,18 +1,18 @@
 #pragma once
 #include "events/Comment.hpp"
-#include "events/Friend.hpp"
 #include "events/FriendRequest.hpp"
 #include "events/GlobalScore.hpp"
 #include "events/LevelScore.hpp"
 #include "events/Profile.hpp"
 #include "events/ProfileComment.hpp"
+#include "events/RequestResult.hpp"
 #include "events/SearchResult.hpp"
 #include <Geode/binding/CommentCell.hpp>
+#include <Geode/binding/GJCompactUserCell.hpp>
 #include <Geode/binding/GJComment.hpp>
 #include <Geode/binding/GJLevelScoreCell.hpp>
 #include <Geode/binding/GJRequestCell.hpp>
 #include <Geode/binding/GJScoreCell.hpp>
-#include <Geode/binding/GJUserCell.hpp>
 #include <Geode/binding/GJUserScore.hpp>
 #include <Geode/binding/ProfilePage.hpp>
 
@@ -36,6 +36,22 @@ namespace user_data {
             else if (score) cell->addEventListener(CommentEvent(score->m_accountID), std::move(fn));
         }
         else fn(comment);
+    }
+
+    /// Runs a function on a GJCompactUserCell once its user data has been downloaded.
+    /// If the data has already been downloaded, the function is run immediately.
+    /// @param cell The GJCompactUserCell to handle
+    /// @param fn The function to run on the GJCompactUserCell's score
+    inline void handleCompactUserCell(GJCompactUserCell* cell, geode::CopyableFunction<void(GJUserScore*)> fn) {
+        if (!cell) return;
+
+        auto score = cell->m_userScore;
+        if (!score) return;
+
+        if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
+            cell->addEventListener(RequestResultEvent(score->m_accountID), std::move(fn));
+        }
+        else fn(score);
     }
 
     /// Runs a function on a GJLevelScoreCell once its user data has been downloaded.
@@ -99,29 +115,6 @@ namespace user_data {
         if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
             if (score->m_scoreType == 2) cell->addEventListener(SearchResultEvent(score->m_accountID), std::move(fn));
             else cell->addEventListener(GlobalScoreEvent(score->m_accountID), std::move(fn));
-        }
-        else fn(score);
-    }
-
-    /// Runs a function on a GJUserCell once its user data has been downloaded.
-    /// If the data has already been downloaded, the function is run immediately.
-    /// @param cell The GJUserCell to handle
-    /// @param fn The function to run on the GJUserCell's score
-    inline void handleUserCell(GJUserCell* cell, geode::CopyableFunction<void(GJUserScore*)> fn) {
-        if (!cell) return;
-
-        auto score = cell->m_userScore;
-        if (!score) return;
-
-        if (score->getUserFlag("hiimjasmine00.user_data_api/downloading")) {
-            switch (score->m_friendReqStatus) {
-                case 1: case 2:
-                    cell->addEventListener(FriendEvent(score->m_accountID), std::move(fn));
-                    break;
-                case 4:
-                    cell->addEventListener(FriendRequestEvent(score->m_accountID), std::move(fn));
-                    break;
-            }
         }
         else fn(score);
     }

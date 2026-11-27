@@ -1,8 +1,8 @@
 #pragma once
-#include <cocos2d.h>
 #include <fmt/format.h>
+#include <Geode/cocos/base_nodes/CCNode.h>
 #if defined(USER_DATA_API_EVENTS) || defined(GEODE_DEFINE_EVENT_EXPORTS)
-#include <Geode/loader/Dispatch.hpp>
+#include <Geode/loader/EventExport.hpp>
 #endif
 #include <matjson.hpp>
 
@@ -63,14 +63,12 @@ namespace user_data {
     /// Uploads user data to the User Data API.
     /// @param data The user data to upload as a matjson::Value
     /// @param id The ID to upload data for (Defaults to your mod ID)
-    inline void upload(matjson::Value data, std::string id = GEODE_MOD_ID)
-        GEODE_EVENT_EXPORT_CALL_NORES(&user_data::upload, (std::move(data), std::move(id)), "hiimjasmine00.user_data_api/user_data::upload")
+    GEODE_EVENT_EXPORT_ID(void, upload, (matjson::Value data, std::string id = GEODE_MOD_ID), (data, id), "hiimjasmine00.user_data_api/user_data::upload");
     #elif defined(GEODE_DEFINE_EVENT_EXPORTS)
     /// Uploads user data to the User Data API.
     /// @param data The user data to upload as a matjson::Value
     /// @param id The ID to upload data for (Defaults to your mod ID)
-    void USER_DATA_API_DLL upload(matjson::Value data, std::string id = GEODE_MOD_ID)
-        GEODE_EVENT_EXPORT_DEFINE(&user_data::upload, (std::move(data), std::move(id)), "hiimjasmine00.user_data_api/user_data::upload")
+    GEODE_EVENT_EXPORT_DEFINE(void, upload, (matjson::Value data, std::string id = GEODE_MOD_ID), (data, id), "hiimjasmine00.user_data_api/user_data::upload");
     #else
     /// Uploads user data to the User Data API.
     /// @param data The user data to upload as a matjson::Value
