@@ -1,4 +1,7 @@
 # User Data API Changelog
+## v3.0.1 (2026-11-27)
+- Fixed a bug where the mod would crash on loading account comments on Windows
+
 ## v3.0.0 (2026-11-26)
 - Ported to Geometry Dash v2.209 / Geode SDK v6.0.0
 
